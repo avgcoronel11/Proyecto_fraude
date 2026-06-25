@@ -1,0 +1,197 @@
+DOCUMENTACION TECNICA
+
+Archivo principal
+- proyecto.py
+
+Proposito
+Automatizar busquedas en LinkedIn sobre posibles fraudes asociados a bancos seleccionados, extraer publicaciones visibles y generar archivos CSV/XLSX para analisis.
+
+Arquitectura actual
+La arquitectura actual es un script modular en Python, organizado por capas dentro de un solo archivo principal:
+
+1. Configuracion
+   - Lee parametros desde configuracion_busqueda.json.
+   - Define rango de fechas, limite por busqueda y filtros activos.
+
+2. Credenciales
+   - Lee usuario y contrasena desde .env.
+   - Evita depender del Excel y evita exponer credenciales en el codigo.
+
+3. Automatizacion web
+   - Usa Playwright para abrir LinkedIn, iniciar sesion y navegar resultados.
+   - El flujo es semiautomatico porque LinkedIn puede pedir captcha, codigo o verificacion manual.
+
+4. Extraccion
+   - Ubica publicaciones por contenedores visibles.
+   - Extrae texto, autor, fecha visible, metricas y URL cuando estan disponibles.
+
+5. Normalizacion y filtros
+   - Convierte textos a formato comparable.
+   - Filtra por fecha estimada.
+   - Filtra por relevancia usando reglas de banco, fraude, denuncia y contexto bancario.
+
+6. Persistencia
+   - Guarda resultados en CSV.
+   - Separa publicaciones relevantes de descartadas.
+   - Genera conteo por banco.
+
+Por ahora no hay base de datos ni API. Es una arquitectura local por archivos, suficiente para validar la recoleccion y los criterios antes de construir una interfaz o dashboard.
+
+Archivos de configuracion
+- .env
+  Contiene las credenciales locales de LinkedIn.
+  No debe subirse a Git.
+
+  Este archivo reemplazo al Excel de accesos. La razon principal es seguridad y simplicidad:
+  - El Excel puede terminar compartiendose por error.
+  - .env es el formato normal para secretos locales.
+  - .gitignore evita que .env se suba a Git.
+  - El codigo ya no necesita pandas/openpyxl solo para leer usuario y contrasena.
+  - El script imprime Usuario: ******** y Contrasena: ******** para no mostrar secretos en consola.
+
+- configuracion_busqueda.json
+  Permite modificar sin tocar codigo:
+  - fecha_inicio
+  - fecha_fin
+  - max_publicaciones_por_busqueda
+  - filtrar_por_fecha
+  - filtrar_por_relevancia
+  - guardar_descartadas
+
+Flujo principal
+1. Cargar configuracion.
+2. Cargar credenciales desde .env.
+3. Abrir LinkedIn con Playwright.
+4. Iniciar sesion.
+5. Esperar confirmacion manual si LinkedIn pide captcha, codigo o verificacion.
+6. Ejecutar combinaciones de busqueda por banco y palabra clave.
+7. Extraer publicaciones visibles.
+8. Filtrar por rango de fechas.
+9. Evaluar relevancia.
+10. Guardar publicaciones relevantes y descartadas.
+11. Generar conteo por banco.
+
+Filtro de relevancia
+El filtro esta en proyecto.py, dentro de:
+- CRITERIOS_RELEVANCIA
+- evaluar_relevancia_publicacion()
+
+Una publicacion relevante debe cumplir:
+- Mencionar el banco o marca objetivo.
+- Contener una senal fuerte de fraude, robo, estafa, suplantacion o phishing.
+  O contener una palabra general de fraude junto con contexto de denuncia.
+- Contener contexto bancario operativo, por ejemplo cuenta, tarjeta, transferencia, QR, saldo, credito, clave, codigo, app o PSE.
+- Presentar una denuncia directa o caso real. El filtro descarta contenido educativo, preventivo, podcast, noticia general o promocion de servicios cuando no hay senales de caso propio o reportado.
+
+Ejemplos de senales fuertes
+- me estafaron
+- me robaron
+- suplantaron
+- phishing
+- qr falso
+- cuenta falsa
+- transaccion no reconocida
+- movimiento no reconocido
+- credito a tu nombre
+- sacaron un credito
+- correo falso
+- aparentan provenir
+- denuncia
+- victima
+
+Ejemplos de contexto de denuncia
+- fui victima
+- fuimos victimas
+- me fuera a pasar
+- mi cuenta
+- mi dinero
+- mi familia
+- recuperar el dinero
+- soportes
+- comprobantes
+- autoridades
+- caso
+
+Ejemplos de contexto bancario operativo
+- cuenta
+- transaccion
+- transferencia
+- movimiento
+- saldo
+- pago
+- PSE
+- QR
+- tarjeta
+- credito
+- clave
+- codigo
+- app
+- billetera
+- cajero
+- cliente
+- usuario
+- dinero
+
+Exclusiones comerciales
+El filtro descarta textos comerciales sin senales de fraude, por ejemplo:
+- vitaminas
+- minerales
+- cosmetica
+- belleza
+- promocion
+- oferta
+- venta
+- llamame
+
+Archivos de salida
+- resultados/publicaciones_linkedin.csv
+  Contiene solo publicaciones relevantes para analisis y conteo.
+
+- resultados/publicaciones_descartadas.csv
+  Contiene publicaciones excluidas y el motivo del descarte.
+  Este archivo sirve para auditar el filtro y mejorar reglas.
+
+- resultados/conteo_por_banco.csv
+  Conteo final de publicaciones relevantes por banco.
+
+- resultados/comparativo_banco_popular.csv
+  Comparativo de denuncias directas de Banco Popular Colombia frente a los demas bancos objetivo, con participacion porcentual, ranking e interacciones promedio.
+
+- resultados/tiempos_ejecucion.csv
+  Duracion por banco/consulta y duracion total del proyecto.
+
+- resultados/reporte_bancos.xlsx
+  Reporte consolidado con hojas de publicaciones, descartadas, conteo, comparativo, tiempos y graficas.
+
+Columnas importantes
+- tipo_contenido
+  Clasifica el contenido como denuncia_directa, educativo_preventivo, comercial_servicios, noticia_o_reporte o indeterminado.
+
+- relevancia
+  alta, media o descartada.
+
+- motivo_relevancia
+  Explica por que la publicacion fue incluida o descartada.
+
+- terminos_banco
+  Alias del banco detectado.
+
+- terminos_fraude
+  Palabras de fraude detectadas.
+
+- terminos_contexto
+  Senales de denuncia o caso real detectadas.
+
+- terminos_contexto_bancario
+  Senales bancarias/operativas detectadas. Esta columna ayuda a descartar publicaciones que solo hablan de fraude de forma teorica, industrial o comercial.
+
+- terminos_exclusion
+  Terminos comerciales o de ruido detectados.
+
+Notas
+- Las clases CSS de LinkedIn no se usan como fuente estable porque cambian con frecuencia.
+- El selector principal para texto de publicaciones es:
+  span[data-testid="expandable-text-box"]
+- El contenedor de publicacion se ubica con:
+  div[role="listitem"]
+- Las fechas visibles de LinkedIn suelen ser relativas. El bot estima una fecha para poder filtrar por rango.

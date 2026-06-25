@@ -1,0 +1,23 @@
+# Credenciales locales
+.env
+*.env
+!*.env.example
+Archivo/Accesos.xlsx
+
+# Salidas generadas
+salidas/
+resultados/
+*.csv
+*.log
+*.deb
+.local-libs/
+.perfil_chromium_*/
+.agents/
+.codex/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/

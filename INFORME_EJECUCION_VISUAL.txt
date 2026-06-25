@@ -1,0 +1,899 @@
+INFORME DE EJECUCION Y EXPOSICION DEL PROYECTO
+===============================================
+
+Nombre del proyecto
+-------------------
+Dashboard y bot local para identificar publicaciones de LinkedIn relacionadas
+con posibles denuncias de fraude bancario en Colombia.
+
+Proposito del proyecto
+----------------------
+El proyecto automatiza busquedas en LinkedIn, recolecta publicaciones visibles,
+filtra los resultados por fecha y relevancia, y genera archivos de analisis
+para comparar menciones de denuncias directas entre bancos.
+
+La idea principal no es medir todo el fraude real de cada banco, sino construir
+una muestra auditada de publicaciones visibles en LinkedIn que cumplan reglas
+definidas de denuncia, banco y contexto bancario.
+
+Entradas principales
+--------------------
+- interfaz.py: dashboard local en navegador. Permite configurar, ejecutar,
+  monitorear y consultar resultados.
+- proyecto.py: bot de automatizacion con Playwright. Abre LinkedIn, busca,
+  extrae, filtra y guarda resultados.
+- configuracion_busqueda.json: parametros de ejecucion.
+- .env: credenciales locales de LinkedIn.
+- resultados/: carpetas generadas por cada ejecucion.
+
+Resumen del flujo
+-----------------
+1. Se abre la interfaz local.
+2. Se configura el rango de fechas y el maximo por consulta.
+3. Se inicia el proyecto desde el dashboard.
+4. El bot abre LinkedIn con Chromium.
+5. Se inicia sesion con las credenciales del archivo .env.
+6. Si LinkedIn pide codigo, captcha o verificacion, se completa manualmente.
+7. El usuario envia ENTER desde la interfaz.
+8. El bot ejecuta 30 busquedas:
+   - 10 bancos objetivo.
+   - 3 palabras clave por banco: fraude, estafa y denuncia.
+9. Se extraen publicaciones visibles.
+10. Se filtran por fecha y relevancia.
+11. Se guardan publicaciones relevantes, descartadas, conteos, comparativo,
+    tiempos, capturas y reporte Excel.
+12. La interfaz muestra los resultados por ejecucion.
+
+Bancos y busquedas
+------------------
+El proyecto usa 10 bancos objetivo:
+- Banco Popular Colombia
+- Banco Davivienda
+- Bancolombia
+- Banco de Bogota
+- BBVA Colombia
+- Banco Agrario de Colombia
+- Scotiabank Colpatria
+- Banco de Occidente
+- Banco AV Villas
+- Banco Caja Social
+
+Para cada banco se hacen 3 busquedas:
+- fraude + banco
+- estafa + banco
+- denuncia + banco
+
+Total por ejecucion:
+10 bancos x 3 palabras clave = 30 busquedas.
+
+Librerias y modulos utilizados
+------------------------------
+El proyecto fue construido casi totalmente con librerias estandar de Python.
+La unica libreria externa usada directamente por el codigo es Playwright.
+
+Libreria externa directa:
+- playwright==1.60.0
+
+Dependencias internas instaladas por Playwright:
+- greenlet==3.5.1
+- pyee==13.0.1
+- typing_extensions==4.15.0
+
+Modulos estandar usados en proyecto.py:
+- csv
+- json
+- random
+- re
+- time
+- unicodedata
+- zipfile
+- datetime
+- pathlib
+- urllib.parse
+- xml.sax.saxutils
+
+Modulos estandar usados en interfaz.py:
+- csv
+- json
+- mimetypes
+- os
+- signal
+- subprocess
+- sys
+- threading
+- time
+- collections.deque
+- datetime
+- http.server
+- pathlib
+- urllib.parse
+
+Por que se usa Playwright
+-------------------------
+Playwright se usa porque LinkedIn es una pagina web dinamica. Los resultados,
+botones, publicaciones, textos expandidos y metricas se renderizan en el
+navegador, no vienen como un archivo estatico simple.
+
+Playwright permite:
+- abrir Chromium automaticamente;
+- escribir usuario y contrasena;
+- hacer clic en el boton de iniciar sesion;
+- navegar a URLs de busqueda;
+- esperar a que cargue contenido;
+- hacer scroll para cargar mas resultados;
+- expandir publicaciones;
+- leer textos y metricas visibles;
+- tomar capturas de publicaciones;
+- dejar el navegador abierto si LinkedIn pide verificacion manual.
+
+Por que se usa csv
+------------------
+csv se usa para guardar resultados en archivos faciles de abrir con Excel,
+LibreOffice o herramientas de analisis.
+
+Archivos generados con csv:
+- publicaciones_linkedin.csv
+- publicaciones_descartadas.csv
+- conteo_por_banco.csv
+- comparativo_banco_popular.csv
+- tiempos_ejecucion.csv
+
+Por que se usa json
+-------------------
+json se usa para la configuracion porque es un formato simple, legible y facil
+de modificar sin tocar el codigo.
+
+Archivo usado:
+- configuracion_busqueda.json
+
+Tambien se usa json en la interfaz para responder endpoints como:
+- /api/config
+- /api/summary
+- /api/table
+- /api/run/status
+
+Por que se usa re
+-----------------
+re permite trabajar con expresiones regulares. Se usa para:
+- limpiar espacios;
+- normalizar textos;
+- detectar fechas visibles como "3 dias", "2 semanas" o "1 mes";
+- extraer patrones de metricas;
+- separar ruido del texto visible.
+
+Por que se usa unicodedata
+--------------------------
+unicodedata permite normalizar texto quitando tildes y diferencias de escritura.
+Esto hace que "Bogota", "Bogota" con tilde y variantes en mayusculas se puedan
+comparar de forma estable.
+
+Por que se usa datetime
+-----------------------
+datetime se usa para:
+- interpretar fecha_inicio y fecha_fin;
+- estimar la fecha de una publicacion a partir de textos relativos de LinkedIn;
+- registrar inicio y fin de cada busqueda;
+- calcular rangos de ejecucion;
+- nombrar carpetas de resultados.
+
+Por que se usa pathlib
+----------------------
+pathlib se usa para manejar rutas de archivos de forma clara y segura:
+- .env
+- configuracion_busqueda.json
+- resultados/
+- capturas_publicaciones/
+- archivos CSV
+- reporte Excel
+
+Por que se usa zipfile y xml.sax.saxutils
+-----------------------------------------
+El reporte Excel se genera manualmente como archivo .xlsx. Un .xlsx es un
+paquete ZIP con archivos XML internos.
+
+zipfile permite crear el paquete .xlsx.
+xml.sax.saxutils.escape permite escribir textos dentro del XML sin romper el
+formato cuando hay caracteres especiales.
+
+Decision importante:
+No se usa pandas ni openpyxl para el reporte. Eso reduce dependencias externas
+y hace el proyecto mas portable.
+
+Por que se usa http.server
+--------------------------
+http.server permite levantar la interfaz local sin instalar Flask, Django ni
+FastAPI. Es suficiente porque el dashboard corre en la misma maquina y solo
+necesita endpoints simples.
+
+Por que se usan subprocess, threading y deque
+---------------------------------------------
+La interfaz no ejecuta la recoleccion directamente dentro del servidor. En su
+lugar lanza proyecto.py como un proceso separado.
+
+subprocess:
+- inicia proyecto.py desde la interfaz;
+- captura la salida del bot;
+- permite enviar ENTER al proceso.
+
+threading:
+- lee el log del proceso sin bloquear la interfaz;
+- permite que el dashboard siga respondiendo mientras el bot corre.
+
+deque:
+- guarda las ultimas lineas del log sin crecer indefinidamente.
+
+Por que se usan os, signal y sys
+--------------------------------
+Estos modulos ayudan a controlar el proceso del bot:
+- elegir el Python del entorno virtual;
+- pasar variables de entorno;
+- detener la ejecucion con SIGTERM;
+- forzar cierre si el proceso no responde;
+- compatibilidad basica entre Linux y Windows.
+
+Por que se usa mimetypes
+------------------------
+mimetypes permite servir correctamente archivos descargables desde la interfaz,
+por ejemplo CSV, XLSX o imagenes PNG.
+
+Configuracion del proyecto
+--------------------------
+El archivo configuracion_busqueda.json contiene:
+- fecha_inicio: fecha inicial del rango, formato AAAA-MM-DD.
+- fecha_fin: fecha final del rango, formato AAAA-MM-DD.
+- max_publicaciones_por_busqueda: limite por busqueda individual.
+- filtrar_por_fecha: si esta activo, descarta publicaciones fuera del rango.
+- filtrar_por_relevancia: si esta activo, descarta publicaciones que no cumplan
+  las reglas de denuncia directa.
+- guardar_descartadas: si esta activo, guarda un archivo de auditoria con lo
+  que fue excluido.
+
+Que significa "Max. por consulta"
+---------------------------------
+Es el numero maximo de publicaciones que el bot intentara extraer por cada
+busqueda individual de LinkedIn.
+
+Una busqueda individual es una combinacion de:
+- banco
+- palabra clave
+
+Ejemplo:
+Si "Max. por consulta" esta en 20:
+- se buscan hasta 20 publicaciones para "fraude Banco Popular Colombia";
+- hasta 20 para "estafa Banco Popular Colombia";
+- hasta 20 para "denuncia Banco Popular Colombia";
+- y asi con cada banco.
+
+Como hay 30 busquedas, el maximo teorico antes de filtrar y deduplicar seria:
+20 x 30 = 600 publicaciones candidatas.
+
+Importante:
+Cuando el filtro por fecha esta activo, el bot intenta cargar mas elementos
+visibles antes de extraer. Internamente usa limite x 3 para no quedarse corto
+despues de descartar publicaciones fuera del rango. La extraccion final por
+busqueda mantiene el limite configurado.
+
+Que pasa si se aumenta "Max. por consulta"
+------------------------------------------
+Ventajas:
+- aumenta la cobertura;
+- permite revisar publicaciones que LinkedIn muestra mas abajo;
+- reduce el riesgo de perder publicaciones relevantes;
+- mejora la base de comparacion si se necesita un reporte mas completo.
+
+Costos:
+- aumenta el tiempo de ejecucion;
+- genera mas capturas;
+- aumenta el tamano de CSV y Excel;
+- aumenta el volumen de descartadas para revisar;
+- puede traer mas ruido;
+- puede elevar la posibilidad de verificaciones o bloqueos temporales de
+  LinkedIn.
+
+Valores recomendados:
+- 5 a 10: pruebas rapidas.
+- 20: valor equilibrado para una ejecucion normal.
+- 30 a 50: revision mas profunda, con mayor tiempo y mayor riesgo de
+  verificacion.
+
+Que pasa si se disminuye "Max. por consulta"
+--------------------------------------------
+Ventajas:
+- la ejecucion es mas rapida;
+- se reduce el numero de capturas;
+- se prueba el flujo con menos carga;
+- se reduce el riesgo de bloqueo o verificacion.
+
+Desventajas:
+- puede dejar publicaciones relevantes por fuera;
+- baja la cobertura;
+- puede afectar la representatividad del comparativo.
+
+Reglas de filtrado
+------------------
+Una publicacion relevante debe cumplir estas condiciones:
+1. Mencionar el banco objetivo o uno de sus alias.
+2. Contener palabras relacionadas con fraude, estafa, robo, phishing,
+   suplantacion o denuncia.
+3. Tener contexto bancario operativo, por ejemplo cuenta, tarjeta,
+   transferencia, PSE, QR, credito, clave, app, saldo o dinero.
+4. Presentar senales de denuncia directa o caso real.
+
+Se descartan publicaciones cuando:
+- no mencionan el banco objetivo;
+- no contienen palabras de fraude o denuncia;
+- no tienen contexto bancario operativo;
+- son comerciales o de servicios sin denuncia directa;
+- son educativas o preventivas sin denuncia directa;
+- son noticias o reportes generales sin denuncia directa;
+- mencionan fraude pero no presentan caso o denuncia concreta.
+
+La columna motivo_relevancia explica por que se incluyo o descarto cada fila.
+
+Estimacion de fechas
+--------------------
+LinkedIn normalmente muestra fechas relativas, por ejemplo:
+- 3 dias
+- 2 semanas
+- 1 mes
+- 1 ano
+
+El bot estima una fecha de publicacion tomando como referencia la fecha actual
+de ejecucion.
+
+Ejemplos:
+- "3 dias" se convierte en fecha actual menos 3 dias.
+- "2 semanas" se convierte en fecha actual menos 14 dias.
+- "1 mes" resta un mes calendario aproximado.
+- "1 ano" resta 12 meses.
+
+Si no puede estimar una fecha y el filtro por fecha esta activo, la publicacion
+no se incluye.
+
+Interfaz del proyecto
+---------------------
+La interfaz se abre en el navegador, normalmente en:
+
+   http://127.0.0.1:8000
+
+Cada parte sirve para lo siguiente.
+
+Barra superior
+--------------
+Contiene:
+- titulo del dashboard;
+- selector de ejecucion;
+- boton Actualizar.
+
+Selector de ejecucion:
+Permite elegir que carpeta de resultados se quiere visualizar. Cada ejecucion
+crea una carpeta distinta dentro de resultados/.
+
+Boton Actualizar:
+Recarga los datos de la ejecucion seleccionada. Sirve cuando acaba de terminar
+una ejecucion o cuando se generaron archivos nuevos.
+
+Estado general
+--------------
+Muestra mensajes breves de la interfaz, por ejemplo:
+- cargando ejecucion;
+- ejecucion cargada;
+- error al leer datos;
+- no hay ejecuciones disponibles.
+
+Metricas principales
+--------------------
+La interfaz muestra cuatro metricas:
+
+1. Denuncias directas
+   Es el numero de filas incluidas en publicaciones_linkedin.csv.
+   Representa publicaciones consideradas relevantes por las reglas del filtro.
+
+2. Descartadas
+   Es el numero de filas en publicaciones_descartadas.csv.
+   Sirve para auditar que fue excluido y por que.
+
+3. Bancos
+   Cuenta cuantos bancos tuvieron al menos una publicacion relevante.
+
+4. Tiempo total
+   Muestra la duracion total del proyecto segun tiempos_ejecucion.csv y el
+   numero total de busquedas ejecutadas.
+
+Configuracion de busqueda
+-------------------------
+Esta seccion modifica los parametros de la proxima ejecucion.
+
+Fecha inicio:
+Define el comienzo del rango de fechas.
+
+Fecha fin:
+Define el final del rango de fechas.
+
+Max. por consulta:
+Define el limite de publicaciones por busqueda individual.
+
+Filtrar fecha:
+Si esta activo, solo se incluyen publicaciones cuya fecha estimada caiga dentro
+del rango configurado.
+
+Filtrar relevancia:
+Si esta activo, aplica las reglas de banco, fraude, contexto bancario y denuncia
+directa.
+
+Guardar:
+Guarda la configuracion en configuracion_busqueda.json.
+
+Recargar:
+Vuelve a cargar la configuracion desde el archivo, descartando cambios no
+guardados en pantalla.
+
+Ejecucion del proyecto
+----------------------
+Esta seccion controla el bot.
+
+Ejecutar proyecto:
+Guarda la configuracion actual y lanza proyecto.py en un proceso separado.
+
+Enviar ENTER:
+Envia un salto de linea al proceso. Se usa cuando el bot queda esperando:
+- despues de que LinkedIn pide verificacion;
+- antes de iniciar busquedas;
+- al final, si se quiere cerrar el navegador.
+
+Detener:
+Intenta parar el proceso en ejecucion.
+
+Insignia de estado:
+Muestra si el bot esta inactivo, iniciando, en ejecucion, deteniendose,
+detenido, finalizado o con error.
+
+Detalle de ejecucion:
+Muestra tiempo transcurrido, inicio, fin y codigo de salida cuando aplica.
+
+Log:
+Muestra lo que imprime proyecto.py en tiempo real. Es la parte mas importante
+para saber en que paso esta el bot.
+
+Archivos
+--------
+Muestra botones de descarga para los archivos disponibles de la ejecucion
+seleccionada:
+- Publicaciones CSV
+- Descartadas CSV
+- Conteo CSV
+- Comparativo CSV
+- Tiempos CSV
+- Reporte Excel
+
+Denuncias directas por banco
+----------------------------
+Grafica de barras que toma conteo_por_banco.csv.
+
+Sirve para ver rapidamente cuantos casos relevantes fueron encontrados por
+banco dentro de la ejecucion seleccionada.
+
+Tiempo por banco
+----------------
+Grafica de barras que suma los tiempos de las busquedas por cada banco dentro
+de la ejecucion seleccionada.
+
+El archivo tiempos_ejecucion.csv guarda una fila por busqueda, por ejemplo:
+- fraude Banco Popular Colombia
+- estafa Banco Popular Colombia
+- denuncia Banco Popular Colombia
+
+La interfaz suma esas filas para mostrar un total consolidado por banco.
+
+Pestanas de tabla
+-----------------
+La interfaz tiene varias pestanas:
+
+Publicaciones:
+Muestra publicaciones relevantes guardadas en publicaciones_linkedin.csv.
+
+Descartadas:
+Muestra publicaciones excluidas y el motivo del descarte.
+
+Conteo:
+Muestra total de publicaciones relevantes por banco.
+
+Comparativo:
+Muestra las columnas calculadas para comparar Banco Popular Colombia frente a
+los demas bancos.
+
+Tiempos:
+Muestra el detalle por busqueda y el total del proyecto.
+
+Filtro de tabla
+---------------
+Permite buscar texto dentro de la tabla activa. Sirve para encontrar bancos,
+autores, palabras clave, motivos o terminos especificos.
+
+Limpiar:
+Borra el filtro aplicado.
+
+Vista de captura
+----------------
+Cuando se selecciona una fila de Publicaciones o Descartadas, la interfaz
+muestra la captura asociada, si existe.
+
+Esta parte es importante para auditoria porque permite revisar visualmente el
+contenido que origino la fila del CSV.
+
+Archivos generados
+------------------
+Cada ejecucion crea una carpeta como:
+
+   resultados/ejecucion_18-06-2026_14-06-39/
+
+Archivos principales:
+
+publicaciones_linkedin.csv:
+Contiene publicaciones relevantes. Son la base del conteo y del comparativo.
+
+publicaciones_descartadas.csv:
+Contiene publicaciones excluidas y el motivo. Sirve para justificar el filtro.
+
+conteo_por_banco.csv:
+Contiene banco, rango_fecha y publicaciones.
+
+comparativo_banco_popular.csv:
+Contiene el analisis comparativo de Banco Popular Colombia frente a los demas
+bancos.
+
+tiempos_ejecucion.csv:
+Contiene duracion por busqueda y una fila total del proyecto.
+
+reporte_bancos.xlsx:
+Reporte consolidado con hojas y graficas.
+
+capturas_publicaciones/:
+Imagenes de evidencia de publicaciones recolectadas.
+
+Como se calcula el conteo por banco
+-----------------------------------
+El conteo por banco se calcula sobre publicaciones relevantes, no sobre todas
+las publicaciones visibles.
+
+Formula:
+
+   publicaciones_banco = numero de filas relevantes donde banco == banco
+
+Ejemplo:
+Si hay 8 publicaciones relevantes de Banco Davivienda, el conteo de ese banco
+sera 8.
+
+Las descartadas no suman en el conteo final.
+
+Como se calcula el comparativo
+------------------------------
+El comparativo se genera en comparativo_banco_popular.csv y usa como banco base:
+
+   Banco Popular Colombia
+
+Variables principales:
+
+total_general:
+Suma de todas las denuncias directas relevantes de todos los bancos.
+
+   total_general = suma(conteo de todos los bancos)
+
+total_base:
+Denuncias directas relevantes de Banco Popular Colombia.
+
+   total_base = conteo["Banco Popular Colombia"]
+
+total:
+Denuncias directas relevantes del banco que se esta calculando.
+
+   total = conteo[banco]
+
+interacciones_total:
+Suma de reacciones, comentarios y compartidos de todas las publicaciones
+relevantes de ese banco.
+
+   interacciones_publicacion = reacciones + comentarios + compartidos
+   interacciones_total_banco = suma(interacciones_publicacion del banco)
+
+Columnas del comparativo
+------------------------
+banco:
+Nombre del banco evaluado.
+
+grupo:
+Clasifica la fila en:
+- Banco Popular, si el banco es Banco Popular Colombia.
+- Otros bancos, para los demas.
+
+rango_fecha:
+Rango usado en la ejecucion, por ejemplo:
+
+   2026-05-01 a 2026-05-31
+
+denuncias_directas:
+Total de publicaciones relevantes del banco.
+
+Formula:
+
+   denuncias_directas = total
+
+participacion_total_porcentaje:
+Porcentaje que representa el banco frente al total de denuncias directas
+relevantes encontradas.
+
+Formula:
+
+   participacion_total_porcentaje = (total / total_general) x 100
+
+Si total_general es 0, la participacion se deja en 0 para evitar division por
+cero.
+
+diferencia_vs_banco_popular:
+Indica cuantas denuncias mas o menos tiene el banco frente a Banco Popular
+Colombia.
+
+Formula:
+
+   diferencia_vs_banco_popular = total - total_base
+
+Interpretacion:
+- 0: tiene el mismo numero que Banco Popular.
+- positivo: tiene mas que Banco Popular.
+- negativo: tiene menos que Banco Popular.
+
+multiplo_vs_banco_popular:
+Indica cuantas veces el banco tiene el volumen de Banco Popular Colombia.
+
+Formula:
+
+   multiplo_vs_banco_popular = total / total_base
+
+Ejemplo:
+Si Banco Popular tiene 1 denuncia y otro banco tiene 8:
+
+   8 / 1 = 8.0
+
+Ese banco tiene 8 veces las denuncias directas encontradas para Banco Popular.
+
+Si total_base es 0, la columna queda vacia porque no se puede dividir entre
+cero.
+
+interacciones_total:
+Suma de las interacciones de las publicaciones relevantes del banco.
+
+Formula:
+
+   interacciones_total = suma(reacciones + comentarios + compartidos)
+
+interacciones_promedio:
+Promedio de interacciones por denuncia directa relevante del banco.
+
+Formula:
+
+   interacciones_promedio = interacciones_total / denuncias_directas
+
+Si denuncias_directas es 0, el promedio queda en 0.
+
+ranking_denuncias:
+Posicion del banco segun numero de denuncias directas relevantes.
+
+Ordenamiento:
+1. Primero, de mayor a menor por denuncias_directas.
+2. En caso de empate, alfabeticamente por nombre del banco.
+
+Ejemplo interpretativo
+----------------------
+Supongamos:
+- Banco Popular Colombia: 1 denuncia.
+- Banco Davivienda: 8 denuncias.
+- Total general: 27 denuncias.
+
+Para Banco Davivienda:
+
+denuncias_directas:
+
+   8
+
+participacion_total_porcentaje:
+
+   (8 / 27) x 100 = 29.63%
+
+diferencia_vs_banco_popular:
+
+   8 - 1 = 7
+
+multiplo_vs_banco_popular:
+
+   8 / 1 = 8.0
+
+Interpretacion:
+En esa ejecucion y bajo esos filtros, Banco Davivienda tuvo 7 denuncias directas
+mas que Banco Popular Colombia y 8 veces su volumen de menciones relevantes.
+
+Importante para la exposicion:
+Estos resultados dependen del rango de fechas, las palabras clave, el maximo por
+consulta, la disponibilidad visible de LinkedIn y las reglas de filtrado. No son
+una medicion oficial del fraude real del sistema financiero.
+
+Como se calcula el tiempo por banco
+-----------------------------------
+tiempos_ejecucion.csv guarda una fila por cada busqueda individual con:
+- inicio
+- fin
+- duracion_segundos
+- duracion_minutos
+- publicaciones_relevantes
+- publicaciones_descartadas
+- resultados_total
+
+La interfaz calcula el tiempo por banco sumando las duraciones de sus tres
+busquedas:
+
+   tiempo_banco = duracion_fraude + duracion_estafa + duracion_denuncia
+
+Ejemplo:
+
+   Banco Popular = 98.84 + 55.44 + 80.10 = 234.38 segundos
+
+La tabla Tiempos conserva el detalle por busqueda.
+
+Reporte Excel
+-------------
+El archivo reporte_bancos.xlsx contiene:
+- hoja Publicaciones;
+- hoja Descartadas;
+- hoja Conteo por banco;
+- hoja Comparativo Popular;
+- hoja Tiempos ejecucion;
+- hoja Graficas.
+
+Graficas del Excel:
+- Denuncias directas por banco.
+- Participacion porcentual por banco.
+- Interacciones promedio por banco.
+- Tiempo de ejecucion por banco.
+
+Como ejecutar por interfaz
+--------------------------
+1. Abrir una terminal.
+2. Entrar a la carpeta:
+
+   cd /home/valen/Proyecto_fraude
+
+3. Ejecutar la interfaz con el entorno virtual:
+
+   .venv/bin/python interfaz.py
+
+4. Abrir en navegador la URL que aparece en consola. Normalmente:
+
+   http://127.0.0.1:8000
+
+5. En la interfaz:
+   - revisar fecha inicio y fecha fin;
+   - ajustar Max. por consulta;
+   - guardar configuracion;
+   - presionar Ejecutar proyecto;
+   - completar verificacion de LinkedIn si aparece;
+   - presionar Enviar ENTER cuando la sesion este lista;
+   - esperar la finalizacion;
+   - revisar tablas, graficas y archivos.
+
+Como ejecutar desde Visual Studio Code
+--------------------------------------
+1. Abrir Visual Studio Code.
+2. Seleccionar File > Open Folder.
+3. Abrir:
+
+   /home/valen/Proyecto_fraude
+
+4. Abrir Terminal > New Terminal.
+5. Ejecutar:
+
+   .venv/bin/python interfaz.py
+
+6. Abrir:
+
+   http://127.0.0.1:8000
+
+Recomendacion:
+Usar la terminal integrada de VS Code, no solo el boton de ejecutar, porque la
+terminal muestra la URL, errores, logs y permite detener con Ctrl+C.
+
+Como ejecutar sin interfaz
+--------------------------
+Si la interfaz no abre, se puede correr directamente:
+
+   cd /home/valen/Proyecto_fraude
+   .venv/bin/python proyecto.py
+
+Flujo directo:
+1. Se abre Chromium.
+2. Se carga LinkedIn.
+3. Se escriben usuario y contrasena desde .env.
+4. Se completa cualquier verificacion manual.
+5. La consola pide ENTER para iniciar busquedas.
+6. Al terminar, se generan archivos en resultados/.
+7. La consola pide ENTER para cerrar el navegador.
+
+Credenciales
+------------
+Debe existir un archivo .env con:
+
+   LINKEDIN_USUARIO=correo_o_usuario
+   LINKEDIN_CONTRASENA=contrasena
+
+No se deben escribir credenciales dentro del codigo.
+No se debe compartir el archivo .env.
+
+Instalacion o preparacion en otro equipo
+----------------------------------------
+Si el proyecto se copia a otro equipo, se debe verificar:
+1. Tener Python instalado.
+2. Crear o activar entorno virtual.
+3. Instalar Playwright.
+4. Instalar Chromium de Playwright.
+5. Crear archivo .env.
+
+Comandos orientativos:
+
+   python3 -m venv .venv
+   .venv/bin/python -m pip install playwright
+   .venv/bin/playwright install chromium
+
+En este equipo ya existe .venv y Playwright esta instalado.
+
+Problemas comunes
+-----------------
+Error: ModuleNotFoundError: No module named 'playwright'
+Solucion: ejecutar con el entorno virtual:
+
+   .venv/bin/python interfaz.py
+
+La interfaz no abre en 8000:
+interfaz.py prueba automaticamente puertos entre 8000 y 8099. Revisar la URL
+exacta impresa en consola.
+
+LinkedIn pide captcha o codigo:
+Completar manualmente en Chromium y luego presionar Enviar ENTER.
+
+No aparecen resultados:
+Revisar:
+- rango de fechas;
+- maximo por consulta;
+- filtros activados;
+- si LinkedIn cargo publicaciones visibles;
+- publicaciones_descartadas.csv para ver motivos.
+
+El comparativo sale en cero:
+Puede ocurrir si no hubo publicaciones relevantes en el rango configurado, si el
+filtro fue muy estricto o si LinkedIn no mostro resultados suficientes.
+
+LinkedIn cambia su interfaz:
+El proyecto puede requerir ajustes si cambian los selectores o estructura de las
+publicaciones.
+
+Limitaciones del proyecto
+-------------------------
+- Depende de lo que LinkedIn muestra publicamente o a la cuenta usada.
+- LinkedIn puede pedir verificaciones manuales.
+- Las fechas son estimadas porque LinkedIn suele mostrar fechas relativas.
+- El filtro es basado en reglas, no en un modelo de inteligencia artificial.
+- El comparativo mide publicaciones relevantes encontradas, no fraude real.
+- Los resultados dependen del rango de fechas y configuracion usada.
+
+Mensajes clave para la exposicion
+---------------------------------
+1. El proyecto automatiza recoleccion y analisis local de publicaciones de
+   LinkedIn sobre fraude bancario.
+2. Usa Playwright porque LinkedIn es dinamico y requiere navegador real.
+3. Usa archivos CSV y Excel para que los resultados sean auditables.
+4. El filtro separa publicaciones relevantes de ruido comercial, educativo o
+   informativo.
+5. El comparativo toma Banco Popular Colombia como referencia y calcula
+   participacion, diferencia, multiplo, interacciones y ranking.
+6. La interfaz permite ejecutar el bot, monitorear logs y revisar resultados sin
+   modificar codigo.
+7. El resultado es una herramienta de apoyo analitico, no una fuente oficial de
+   medicion de fraude.
+

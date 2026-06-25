@@ -1,0 +1,103 @@
+PROYECTO: MONITOREO DE PUBLICACIONES SOBRE FRAUDES BANCARIOS
+
+Objetivo general
+Crear un bot que permita buscar, recolectar y organizar publicaciones en redes sociales relacionadas con posibles fraudes, estafas o suplantaciones asociadas a bancos seleccionados en Colombia. La informacion recolectada servira para generar comparaciones, estadisticas y analisis posteriores.
+
+Alcance inicial
+- Red social inicial: LinkedIn.
+- Tipo de contenido inicial: publicaciones en resultados de busqueda.
+- Rango de fechas inicial: desde 2026-05-01 hasta 2026-05-31.
+- El rango de fechas debe poder modificarse desde configuracion_busqueda.json.
+- Bancos o marcas iniciales:
+  - Banco Popular Colombia.
+  - Banco Davivienda.
+  - Bancolombia.
+  - Banco de Bogota.
+  - BBVA Colombia.
+  - Banco Agrario de Colombia.
+  - Scotiabank Colpatria.
+  - Banco de Occidente.
+  - Banco AV Villas.
+  - Banco Caja Social.
+
+Temas de busqueda iniciales
+- Consultas compactas por banco: fraude, estafa y denuncia.
+- Suplantacion.
+- Phishing.
+- Robo.
+- Cuenta falsa.
+- QR falso.
+- Llamada fraudulenta.
+- WhatsApp falso.
+- Claves o codigos solicitados por terceros.
+
+Objetivos especificos
+1. Automatizar la busqueda de publicaciones en LinkedIn usando consultas compactas por banco con palabras clave relacionadas con fraude.
+2. Identificar publicaciones relevantes dentro de los resultados encontrados.
+3. Extraer informacion basica de cada publicacion:
+   - Banco o marca mencionada.
+   - Texto de la publicacion.
+   - Autor o entidad que publica, cuando sea visible.
+   - Fecha o antiguedad visible de la publicacion.
+   - Fecha estimada de publicacion, cuando LinkedIn solo muestre fechas relativas.
+   - URL de la publicacion o resultado, cuando este disponible.
+   - Numero de reacciones, comentarios y compartidos, cuando sean visibles.
+4. Guardar los datos recolectados en un formato estructurado para analisis posterior.
+5. Permitir comparaciones entre bancos o marcas segun volumen de publicaciones, frecuencia de palabras clave y nivel de interaccion.
+6. Construir estadisticas basicas a partir de la informacion recolectada.
+7. Generar un conteo de publicaciones recolectadas por cada banco o marca.
+8. Filtrar resultados irrelevantes antes de contarlos, descartando publicaciones que no mencionen el banco objetivo o que no contengan señales de fraude, estafa, robo, suplantacion o denuncia.
+
+Posibles comparaciones
+- Cantidad de publicaciones por banco o marca.
+- Cantidad de publicaciones por palabra clave.
+- Publicaciones con mayor numero de reacciones.
+- Publicaciones con mayor numero de comentarios.
+- Publicaciones con mayor numero de compartidos.
+- Temas de fraude mas frecuentes por banco.
+- Evolucion temporal de publicaciones, si la fecha se puede normalizar.
+
+Filtro de relevancia
+- Una publicacion se considera relevante si cumple estas condiciones:
+  - Menciona el banco o marca objetivo.
+  - Contiene al menos una señal de fraude, estafa, robo, suplantacion, phishing, denuncia o movimiento no reconocido.
+  - Contiene contexto bancario u operativo como cuenta, transferencia, tarjeta, credito, QR, clave, codigo, app, saldo, movimiento, cliente o usuario.
+  - Presenta senales de denuncia directa o caso real, por ejemplo fui victima, me robaron, sin autorizacion, no solicite, denuncia publica, exijo respuesta o falta de respuesta.
+- Una publicacion se descarta si:
+  - No menciona el banco objetivo.
+  - No contiene palabras de fraude o denuncia.
+  - Menciona fraude de forma teorica, comercial, laboral o de industria sin mostrar un caso bancario concreto.
+  - Es contenido educativo, preventivo, podcast, webinar, noticia general o promocion de servicios sin denuncia directa.
+- Las publicaciones relevantes se guardan en resultados/publicaciones_linkedin.csv.
+- Las publicaciones descartadas se guardan en resultados/publicaciones_descartadas.csv para revisar y mejorar el filtro.
+
+Criterios de cuidado
+- No publicar ni exponer credenciales.
+- No recolectar claves, codigos, documentos, datos financieros ni informacion sensible de personas.
+- Evitar almacenar datos personales innecesarios.
+- Preferir datos publicos o visibles para la cuenta usada.
+- Respetar limites de uso, tiempos de espera y posibles restricciones de LinkedIn.
+- Mantener trazabilidad de la fuente mediante URL o referencia de busqueda.
+
+Notas tecnicas iniciales
+- El selector mas util observado para extraer el texto de publicaciones de LinkedIn es:
+  span[data-testid="expandable-text-box"]
+- Los contenedores de publicaciones pueden ubicarse inicialmente con:
+  div[role="listitem"]
+- No se recomienda depender de clases CSS generadas por LinkedIn, porque pueden cambiar con frecuencia.
+
+Resultado esperado
+Una base de datos o archivo estructurado con publicaciones relacionadas con fraudes bancarios, lista para generar reportes, graficas, comparaciones y estadisticas. La version actual debe incluir conteo por banco, tiempos de ejecucion por banco, graficas y un comparativo de Banco Popular Colombia frente a los demas bancos objetivo.
+
+Configuracion editable
+- Archivo: configuracion_busqueda.json
+- Campos principales:
+  - fecha_inicio: fecha inicial del rango en formato AAAA-MM-DD.
+  - fecha_fin: fecha final del rango en formato AAAA-MM-DD.
+  - max_publicaciones_por_busqueda: limite de publicaciones por consulta compacta de banco.
+  - filtrar_por_fecha: true para guardar solo publicaciones dentro del rango configurado.
+  - filtrar_por_relevancia: true para contar solo publicaciones relacionadas con fraude.
+  - guardar_descartadas: true para guardar resultados excluidos y revisar por que se descartaron.
+
+Nota sobre fechas de LinkedIn
+LinkedIn puede mostrar fechas relativas en resultados de busqueda, por ejemplo "3 semanas" o "1 mes", en vez de una fecha exacta. En esos casos el bot guardara una fecha estimada para poder aplicar el filtro inicial.
