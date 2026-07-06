@@ -1,13 +1,13 @@
 {
   "plataforma": "linkedin",
-  "fecha_inicio": "2026-04-01",
-  "fecha_fin": "2026-05-31",
-  "max_publicaciones_por_busqueda": 30,
+  "fecha_inicio": "2026-06-01",
+  "fecha_fin": "2026-06-30",
+  "max_publicaciones_por_busqueda": 35,
   "max_publicaciones_por_banco": 50,
   "max_comentarios_por_publicacion": 200,
   "leer_respuestas_comentarios": false,
   "filtrar_por_fecha": true,
-  "filtrar_por_relevancia": false,
+  "filtrar_por_relevancia": true,
   "guardar_descartadas": true,
   "bancos_seleccionados": [
     "Banco Popular Colombia",

@@ -102,7 +102,7 @@ import subprocess
 import sys
 import threading
 import time
-from collections import deque
+from collections import Counter, deque
 from datetime import date, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -115,6 +115,7 @@ CONFIG_PATH = BASE_DIR / "configuracion_busqueda.json"
 PROYECTO_PATH = BASE_DIR / "proyecto.py"
 INSTAGRAM_PATH = BASE_DIR / "instagram_bot.py"
 FACEBOOK_PATH = BASE_DIR / "facebook_bot.py"
+RUTA_LOGO = BASE_DIR / "Logo" / "LINDA.png"
 PYTHON_VENV = BASE_DIR / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 LIBS_PATH = BASE_DIR / ".local-libs" / "usr" / "lib" / "x86_64-linux-gnu"
 HOST = "127.0.0.1"
@@ -228,7 +229,7 @@ HTML = r"""<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dashboard fraude bancario</title>
+  <title>LINDA</title>
   <style>
     :root {
       --bg: #f4f6f8;
@@ -265,11 +266,38 @@ HTML = r"""<!doctype html>
       margin: 0 auto;
       padding: 12px 18px;
     }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .brand-logo {
+      width: 62px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 6px;
+      flex: 0 0 auto;
+      background: #071426;
+    }
+    .brand-text {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
     h1 {
       margin: 0;
-      font-size: 18px;
+      font-size: 22px;
       font-weight: 700;
       letter-spacing: 0;
+    }
+    .brand-subtitle {
+      color: #c8d5e2;
+      font-size: 12px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     select, input, button {
       font: inherit;
@@ -348,7 +376,8 @@ HTML = r"""<!doctype html>
     }
     .section-head h2 {
       margin: 0;
-      font-size: 15px;
+      font-size: 16px;
+      line-height: 1.25;
     }
     .bars {
       display: grid;
@@ -378,10 +407,170 @@ HTML = r"""<!doctype html>
       background: var(--accent-2);
       min-width: 2px;
     }
+    .bar-fill.popular-bank {
+      background: var(--accent);
+    }
+    .bar-label.popular-bank {
+      font-weight: 700;
+      color: var(--accent);
+    }
     .bar-value {
       text-align: right;
       color: var(--muted);
       font-variant-numeric: tabular-nums;
+    }
+    #countBars {
+      gap: 10px;
+    }
+    #countBars .bar-row {
+      grid-template-columns: 250px 1fr 72px;
+      gap: 14px;
+    }
+    #countBars .bar-label,
+    #countBars .bar-value {
+      font-size: 17px;
+      line-height: 1.25;
+    }
+    #countBars .bar-track {
+      height: 20px;
+    }
+    .pain-row {
+      display: grid;
+      gap: 8px;
+    }
+    .pain-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .pain-title {
+      color: #263445;
+      font-weight: 700;
+    }
+    .pain-note {
+      color: var(--muted);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #painBars {
+      gap: 13px;
+    }
+    #painBars .pain-title,
+    #painBars .bar-value {
+      font-size: 17px;
+      line-height: 1.25;
+    }
+    #painBars .pain-note {
+      font-size: 13px;
+    }
+    #painBars .bar-track {
+      height: 18px;
+    }
+    .modality-dashboard {
+      display: grid;
+      grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+      gap: 32px;
+      align-items: center;
+      margin-bottom: 26px;
+    }
+    .modality-donut-area {
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .modality-donut {
+      position: relative;
+      width: min(100%, 300px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: #eef2f6;
+      box-shadow: inset 0 0 0 1px rgba(23, 32, 42, .08);
+    }
+    .modality-donut::after {
+      content: "";
+      position: absolute;
+      inset: 25%;
+      border-radius: 50%;
+      background: var(--panel);
+      box-shadow: 0 0 0 1px rgba(23, 32, 42, .08);
+    }
+    .donut-center {
+      position: absolute;
+      inset: 27%;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      text-align: center;
+      border-radius: 50%;
+    }
+    .donut-total {
+      font-size: 44px;
+      line-height: 1;
+      font-weight: 800;
+      color: #17202a;
+      font-variant-numeric: tabular-nums;
+    }
+    .donut-label {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 650;
+      line-height: 1.15;
+    }
+    .modality-legend {
+      display: grid;
+      gap: 12px;
+      min-width: 0;
+    }
+    .legend-item {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr) minmax(112px, auto);
+      gap: 12px;
+      align-items: start;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .legend-item:last-child {
+      border-bottom: 0;
+    }
+    .legend-swatch {
+      width: 16px;
+      height: 16px;
+      margin-top: 4px;
+      border-radius: 3px;
+      background: var(--legend-color);
+    }
+    .legend-text {
+      min-width: 0;
+    }
+    .legend-title {
+      color: #263445;
+      font-weight: 700;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+    .legend-note {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.25;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .legend-value {
+      color: #17202a;
+      font-weight: 800;
+      font-size: 18px;
+      line-height: 1.25;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
     }
     .tabs {
       display: flex;
@@ -419,19 +608,21 @@ HTML = r"""<!doctype html>
       text-align: left;
       vertical-align: top;
       min-width: 110px;
+      font-size: 13px;
     }
     th {
       position: sticky;
       top: 0;
       z-index: 1;
-      background: #eef3f7;
+      background: #17202a;
       font-size: 12px;
-      color: #3b4654;
+      color: #fff;
       text-transform: uppercase;
       letter-spacing: .03em;
     }
+    tbody tr:nth-child(even) td { background: #f7f9fb; }
     tr.clickable { cursor: pointer; }
-    tr.clickable:hover td { background: #f7fbff; }
+    tr.clickable:hover td { background: #edf6ff; }
     td.long {
       min-width: 360px;
       max-width: 520px;
@@ -632,23 +823,37 @@ HTML = r"""<!doctype html>
       .config-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .bank-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .split { grid-template-columns: 1fr; }
+      .modality-dashboard { grid-template-columns: 1fr; }
       .bar-row { grid-template-columns: 130px 1fr 44px; }
     }
     @media (max-width: 640px) {
       main { padding: 10px; }
+      .brand-subtitle { white-space: normal; }
       .grid { grid-template-columns: 1fr; }
       .config-grid { grid-template-columns: 1fr; }
       .bank-options { grid-template-columns: 1fr; }
       .run-code { grid-template-columns: 1fr; }
       .section-head { align-items: stretch; flex-direction: column; }
       .table-tools { flex-direction: column; align-items: stretch; }
+      .modality-donut { width: min(100%, 260px); }
+      .legend-item { grid-template-columns: 16px minmax(0, 1fr); }
+      .legend-value {
+        grid-column: 2;
+        text-align: left;
+      }
     }
   </style>
 </head>
 <body>
   <header>
     <div class="topbar">
-      <h1>Dashboard fraude bancario</h1>
+      <div class="brand">
+        <img class="brand-logo" src="/assets/logo" alt="Logo LINDA">
+        <div class="brand-text">
+          <h1>LINDA</h1>
+          <div class="brand-subtitle">LinkedIn de Investigación de Denuncias y Alertas</div>
+        </div>
+      </div>
       <select id="executionSelect" aria-label="Ejecucion"></select>
       <button id="refreshBtn">Actualizar</button>
     </div>
@@ -750,13 +955,29 @@ HTML = r"""<!doctype html>
 
     <section class="section split">
       <div class="panel">
-        <div class="section-head"><h2>Denuncias directas por banco</h2></div>
+        <div class="section-head"><h2 id="countChartTitle">Denuncias directas por banco</h2></div>
         <div class="bars" id="countBars"></div>
       </div>
       <div class="panel">
-        <div class="section-head"><h2>Tiempo por banco</h2></div>
+        <div class="section-head"><h2 id="timeChartTitle">Tiempo por banco</h2></div>
         <div class="bars" id="timeBars"></div>
       </div>
+    </section>
+
+    <section class="section panel">
+      <div class="section-head"><h2 id="modalityChartTitle">Modalidad reportada</h2></div>
+      <div class="modality-dashboard">
+        <div class="modality-donut-area">
+          <div class="modality-donut" id="modalityDonut">
+            <div class="donut-center">
+              <div class="donut-total" id="modalityDonutTotal">0</div>
+              <div class="donut-label">publicaciones</div>
+            </div>
+          </div>
+        </div>
+        <div class="modality-legend" id="modalityLegend"></div>
+      </div>
+      <div class="bars" id="painBars"></div>
     </section>
 
     <section class="section panel">
@@ -814,6 +1035,27 @@ HTML = r"""<!doctype html>
       error: "Error"
     };
 
+    const painLabels = {
+      falsificacion: "Falsificación",
+      estafa: "Estafa",
+      robo_datos: "Robo de datos",
+      tarjeta: "Fraude con tarjeta",
+      transaccion_no_autorizada: "Transacción no autorizada",
+      contacto_no_oficial: "Contacto no oficial",
+      queja_bancaria_general: "Queja bancaria general",
+      servicio_tramite_bancario: "Servicio o trámite bancario",
+      sin_clasificar: "Casos por revisar",
+      sin_publicaciones: "Sin publicaciones"
+    };
+
+    const columnLabels = {
+      dolor_cliente: "modalidad_reportada",
+      dolor_cliente_secundario: "modalidad_secundaria",
+      modalidad_especifica: "modalidad_especifica",
+      confianza_dolor: "confianza_modalidad",
+      palabras_dolor_detectadas: "palabras_detectadas"
+    };
+
     const availableBanks = [
       "Banco Popular Colombia",
       "Banco Davivienda",
@@ -850,6 +1092,17 @@ HTML = r"""<!doctype html>
         "Banco Caja Social"
       ]
     };
+
+    const popularBank = "Banco Popular Colombia";
+    const modalityColors = [
+      "#0F6B63",
+      "#275D9F",
+      "#B44E5A",
+      "#8A63D2",
+      "#C77818",
+      "#2C7A9B",
+      "#59636F"
+    ];
 
     function status(text) {
       document.getElementById("status").textContent = text || "";
@@ -964,6 +1217,28 @@ HTML = r"""<!doctype html>
         metric("Bancos", s.bancos_con_resultados || 0, "con al menos una denuncia"),
         metric("Tiempo total", `${s.duracion_total_minutos || 0} min`, `${s.total_busquedas || 0} consultas`)
       ].join("");
+    }
+
+    function summaryDateRange() {
+      const s = state.summary || {};
+      const rows = [
+        ...(s.conteo || []),
+        ...(s.comparativo || []),
+        ...(state.rows || [])
+      ];
+      const row = rows.find(item => item && item.rango_fecha);
+      return row ? row.rango_fecha : "";
+    }
+
+    function titleWithRange(title) {
+      const range = summaryDateRange();
+      return range ? `${title} | ${range}` : title;
+    }
+
+    function renderChartTitles() {
+      document.getElementById("countChartTitle").textContent = titleWithRange("Denuncias directas por banco");
+      document.getElementById("timeChartTitle").textContent = titleWithRange("Tiempo por banco");
+      document.getElementById("modalityChartTitle").textContent = titleWithRange("Modalidad reportada");
     }
 
     async function loadConfig() {
@@ -1111,24 +1386,149 @@ HTML = r"""<!doctype html>
       document.getElementById("fileLinks").innerHTML = links.join("");
     }
 
-    function renderBars(id, rows, labelKey, valueKey, formatValue) {
+    function sortBankChartRows(rows, valueKey) {
+      const copied = [...rows];
+      const popular = copied.filter(row => (row.banco || "") === popularBank);
+      const others = copied
+        .filter(row => (row.banco || "") !== popularBank)
+        .sort((a, b) => {
+          const diff = number(b[valueKey]) - number(a[valueKey]);
+          return diff || String(a.banco || "").localeCompare(String(b.banco || ""));
+        });
+      return [...popular, ...others];
+    }
+
+    function renderBars(id, rows, labelKey, valueKey, formatValue, highlightLabel) {
       const max = Math.max(1, ...rows.map(row => number(row[valueKey])));
       const html = rows.map(row => {
         const value = number(row[valueKey]);
         const width = Math.max(2, Math.round((value / max) * 100));
         const displayValue = formatValue ? formatValue(value, row) : value;
+        const label = row[labelKey] || "";
+        const highlight = label === highlightLabel ? " popular-bank" : "";
         return `<div class="bar-row">
-          <div class="bar-label" title="${row[labelKey] || ""}">${row[labelKey] || ""}</div>
-          <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
+          <div class="bar-label${highlight}" title="${escapeHtml(label)}">${escapeHtml(label)}</div>
+          <div class="bar-track"><div class="bar-fill${highlight}" style="width:${width}%"></div></div>
           <div class="bar-value">${displayValue}</div>
         </div>`;
       }).join("");
       document.getElementById(id).innerHTML = html || `<div class="muted">Sin datos.</div>`;
     }
 
+    function renderBankBars(rows) {
+      renderBars(
+        "countBars",
+        sortBankChartRows(rows || [], "publicaciones"),
+        "banco",
+        "publicaciones",
+        null,
+        popularBank
+      );
+    }
+
     function formatDuration(seconds) {
       if (seconds >= 60) return `${(seconds / 60).toFixed(1)} min`;
       return `${seconds.toFixed(0)} s`;
+    }
+
+    function topModalityRows(rows, limit = 6) {
+      const ordered = [...(rows || [])]
+        .filter(row => number(row.publicaciones) > 0)
+        .sort((a, b) => {
+          const diff = number(b.publicaciones) - number(a.publicaciones);
+          return diff || String(a.modalidad_reportada || "").localeCompare(String(b.modalidad_reportada || ""));
+        });
+
+      const topRows = ordered.slice(0, limit);
+      const remaining = ordered.slice(limit);
+
+      if (!remaining.length) return topRows;
+
+      const otrasPublicaciones = remaining.reduce((total, row) => total + number(row.publicaciones), 0);
+      const otrasPorcentaje = remaining.reduce((total, row) => total + number(row.participacion_porcentaje), 0);
+
+      return [
+        ...topRows,
+        {
+          modalidad_reportada: "Otras modalidades",
+          publicaciones: otrasPublicaciones,
+          participacion_porcentaje: otrasPorcentaje,
+          bancos_impactados: "",
+          palabras_detectadas: ""
+        }
+      ];
+    }
+
+    function renderModalityDonut(rows) {
+      const donutRows = topModalityRows(rows);
+      const total = donutRows.reduce((sum, row) => sum + number(row.publicaciones), 0);
+      const donut = document.getElementById("modalityDonut");
+      const totalNode = document.getElementById("modalityDonutTotal");
+      const legend = document.getElementById("modalityLegend");
+
+      totalNode.textContent = total;
+
+      if (!total || !donutRows.length) {
+        donut.style.background = "#eef2f6";
+        legend.innerHTML = `<div class="muted">Sin datos.</div>`;
+        return;
+      }
+
+      let cursor = 0;
+      const segments = donutRows.map((row, index) => {
+        const value = number(row.publicaciones);
+        const start = cursor;
+        const end = cursor + (value / total) * 100;
+        cursor = end;
+        const color = modalityColors[index % modalityColors.length];
+        return `${color} ${start.toFixed(2)}% ${end.toFixed(2)}%`;
+      });
+
+      donut.style.background = `conic-gradient(${segments.join(", ")})`;
+
+      legend.innerHTML = donutRows.map((row, index) => {
+        const value = number(row.publicaciones);
+        const percent = total ? ((value / total) * 100).toFixed(1) : "0.0";
+        const label = row.modalidad_reportada || "Sin modalidad";
+        const banks = row.bancos_impactados
+          ? `<div class="legend-note" title="${escapeHtml(row.bancos_impactados)}">${escapeHtml(row.bancos_impactados)}</div>`
+          : "";
+        return `<div class="legend-item" style="--legend-color:${modalityColors[index % modalityColors.length]}">
+          <div class="legend-swatch"></div>
+          <div class="legend-text">
+            <div class="legend-title">${escapeHtml(label)}</div>
+            ${banks}
+          </div>
+          <div class="legend-value">${value} · ${percent}%</div>
+        </div>`;
+      }).join("");
+    }
+
+    function renderPainBars(rows) {
+      const max = Math.max(1, ...rows.map(row => number(row.publicaciones)));
+      const html = rows.map(row => {
+        const value = number(row.publicaciones);
+        const width = Math.max(2, Math.round((value / max) * 100));
+        const key = row.dolor_cliente || "sin_clasificar";
+        const label = row.modalidad_reportada || painLabels[key] || key;
+        const percent = number(row.participacion_porcentaje).toFixed(1);
+        const words = row.palabras_detectadas
+          ? `<div class="pain-note" title="${escapeHtml(row.palabras_detectadas)}">${escapeHtml(row.palabras_detectadas)}</div>`
+          : "";
+        const banks = row.bancos_impactados
+          ? `<div class="pain-note" title="${escapeHtml(row.bancos_impactados)}">${escapeHtml(row.bancos_impactados)}</div>`
+          : "";
+        return `<div class="pain-row">
+          <div class="pain-head">
+            <div class="pain-title">${escapeHtml(label)}</div>
+            <div class="bar-value">${value} (${percent}%)</div>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
+          ${banks}
+          ${words}
+        </div>`;
+      }).join("");
+      document.getElementById("painBars").innerHTML = html || `<div class="muted">Sin datos.</div>`;
     }
 
     function renderTabs() {
@@ -1171,7 +1571,7 @@ HTML = r"""<!doctype html>
         return;
       }
       const headers = Object.keys(rows[0]);
-      const thead = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>`;
+      const thead = `<thead><tr>${headers.map(h => `<th>${columnLabels[h] || h}</th>`).join("")}</tr></thead>`;
       const tbody = rows.map((row, index) => {
         const cls = ["publicaciones", "descartadas"].includes(state.table) ? " class=\"clickable\"" : "";
         const cells = headers.map(h => `<td class="${cellClass(h)}">${escapeHtml(row[h] || "")}</td>`).join("");
@@ -1233,9 +1633,12 @@ HTML = r"""<!doctype html>
       status("Cargando ejecucion...");
       state.summary = await getJson(withBankFilter(`/api/summary?exec=${encodeURIComponent(state.execution)}`));
       renderMetrics();
+      renderChartTitles();
       renderFileLinks();
-      renderBars("countBars", state.summary.conteo || [], "banco", "publicaciones");
+      renderBankBars(state.summary.conteo || []);
       renderBars("timeBars", state.summary.tiempos_banco || [], "banco", "duracion_segundos", formatDuration);
+      renderModalityDonut(state.summary.dolor_cliente || []);
+      renderPainBars(state.summary.dolor_cliente || []);
       renderTabs();
       await loadTable();
       status(`Ejecucion cargada: ${state.execution}`);
@@ -1829,6 +2232,98 @@ def tiempos_por_banco(tiempos_busqueda):
     ]
 
 
+def pain_label(clave):
+    etiquetas = {
+        "falsificacion": "Falsificación",
+        "estafa": "Estafa",
+        "robo_datos": "Robo de datos",
+        "tarjeta": "Fraude con tarjeta",
+        "transaccion_no_autorizada": "Transacción no autorizada",
+        "contacto_no_oficial": "Contacto no oficial",
+        "queja_bancaria_general": "Queja bancaria general",
+        "servicio_tramite_bancario": "Servicio o trámite bancario",
+        "sin_clasificar": "Casos por revisar",
+        "sin_publicaciones": "Sin publicaciones",
+    }
+
+    return etiquetas.get(clave, clave or "Casos por revisar")
+
+
+def resumen_dolor_cliente(publicaciones):
+    total = len(publicaciones)
+
+    if not publicaciones:
+        return [
+            {
+                "grupo_modalidad": "sin_publicaciones",
+                "modalidad_reportada": "Sin publicaciones",
+                "dolor_cliente": "sin_publicaciones",
+                "publicaciones": 0,
+                "participacion_porcentaje": 0,
+                "bancos_impactados": "",
+                "palabras_detectadas": "",
+            }
+        ]
+
+    acumulados = {}
+
+    for fila in publicaciones:
+        grupo = (fila.get("dolor_cliente") or "sin_clasificar").strip()
+        modalidad = (
+            fila.get("modalidad_especifica")
+            or pain_label(grupo)
+        ).strip()
+        palabras = fila.get("palabras_dolor_detectadas") or ""
+
+        if modalidad not in acumulados:
+            acumulados[modalidad] = {
+                "grupo_modalidad": grupo,
+                "modalidad_reportada": modalidad,
+                "dolor_cliente": grupo,
+                "publicaciones": 0,
+                "palabras": Counter(),
+                "bancos": Counter(),
+            }
+
+        acumulados[modalidad]["publicaciones"] += 1
+        acumulados[modalidad]["bancos"][fila.get("banco") or "Sin banco"] += 1
+
+        for palabra in palabras.split(","):
+            palabra = palabra.strip()
+            if palabra:
+                acumulados[modalidad]["palabras"][palabra] += 1
+
+    resumen = []
+
+    for acumulado in acumulados.values():
+        publicaciones_categoria = acumulado["publicaciones"]
+        resumen.append(
+            {
+                "grupo_modalidad": acumulado["grupo_modalidad"],
+                "modalidad_reportada": acumulado["modalidad_reportada"],
+                "dolor_cliente": acumulado["dolor_cliente"],
+                "publicaciones": publicaciones_categoria,
+                "participacion_porcentaje": round(
+                    (publicaciones_categoria / total) * 100,
+                    2,
+                ),
+                "bancos_impactados": ", ".join(
+                    f"{banco} ({total_banco})"
+                    for banco, total_banco in acumulado["bancos"].most_common()
+                ),
+                "palabras_detectadas": ", ".join(
+                    palabra
+                    for palabra, _ in acumulado["palabras"].most_common(8)
+                ),
+            }
+        )
+
+    return sorted(
+        resumen,
+        key=lambda fila: (-fila["publicaciones"], fila["modalidad_reportada"]),
+    )
+
+
 def resumen_ejecucion(ejecucion, bancos=None):
     publicaciones = leer_csv(ejecucion / "publicaciones_linkedin.csv")
     descartadas = leer_csv(ejecucion / "publicaciones_descartadas.csv")
@@ -1867,6 +2362,7 @@ def resumen_ejecucion(ejecucion, bancos=None):
         "comparativo": comparativo,
         "tiempos_busqueda": tiempos_busqueda,
         "tiempos_banco": tiempos_por_banco(tiempos_busqueda),
+        "dolor_cliente": resumen_dolor_cliente(publicaciones),
         "bancos_con_resultados": bancos_con_resultados,
         "duracion_total_segundos": duracion_total_segundos,
         "duracion_total_minutos": round(duracion_total_segundos / 60, 2),
@@ -1946,6 +2442,19 @@ class InterfazHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/api/run/status":
             respuesta_json(self, estado_ejecucion())
+            return
+
+        if parsed.path == "/assets/logo":
+            if not RUTA_LOGO.exists():
+                raise FileNotFoundError("Logo no encontrado.")
+
+            cuerpo = RUTA_LOGO.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(cuerpo)))
+            self.send_header("Cache-Control", "public, max-age=3600")
+            self.end_headers()
+            self.wfile.write(cuerpo)
             return
 
         ejecucion = obtener_ejecucion(params.get("exec", [""])[0])

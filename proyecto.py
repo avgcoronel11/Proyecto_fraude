@@ -98,7 +98,7 @@ Inventario de funciones principales
 - crear_reporte_excel() y auxiliares XML: construyen reporte_bancos.xlsx sin
   depender de pandas/openpyxl.
 - guardar_comparativo_banco_popular(): calcula participacion, diferencias,
-  multiplo, interacciones y ranking.
+  descartadas, interacciones y ranking.
 - guardar_resultados(): escribe todos los archivos finales.
 - ejecutar_busquedas_linkedin(): orquesta las busquedas y mide tiempos.
 - escribir_texto_como_humano()/llenar_input_visible()/click_boton_iniciar_sesion():
@@ -114,6 +114,7 @@ import re
 import time
 import unicodedata
 import zipfile
+from collections import Counter
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote
@@ -533,6 +534,503 @@ CRITERIOS_RELEVANCIA = {
     ],
 }
 
+DOLOR_CLIENTE_CATEGORIAS = {
+    "falsificacion": [
+        ("falsificacion", 3),
+        ("falsificaciones", 3),
+        ("falsificaron", 3),
+        ("falsificaron mi firma", 4),
+        ("firma falsa", 4),
+        ("documento falso", 4),
+        ("documentos falsos", 4),
+        ("cedula falsa", 4),
+        ("suplantacion", 3),
+        ("suplantaron", 3),
+        ("suplantaron mi identidad", 4),
+        ("mi nombre", 2),
+        ("a mi nombre", 3),
+        ("credito a mi nombre", 4),
+        ("credito a tu nombre", 4),
+        ("credito no solicitado", 4),
+        ("credito nunca fue solicitado", 4),
+        ("no solicite", 3),
+        ("nunca solicite", 3),
+        ("productos fraudulentos", 3),
+    ],
+    "estafa": [
+        ("estafa", 3),
+        ("estafas", 3),
+        ("me estafaron", 4),
+        ("nos estafaron", 4),
+        ("estafaron", 3),
+        ("estafador", 3),
+        ("estafadores", 3),
+        ("fraude", 1),
+        ("fraudulento", 2),
+        ("fraudulenta", 2),
+        ("engano", 3),
+        ("enganaron", 3),
+        ("me enganaron", 4),
+        ("pague y no recibi", 4),
+        ("transferi", 2),
+        ("transferencia fraudulenta", 4),
+        ("qr falso", 3),
+        ("cuenta falsa", 3),
+        ("llamada fraudulenta", 3),
+        ("whatsapp falso", 3),
+        ("correo falso", 3),
+        ("correos falsos", 3),
+        ("phishing", 3),
+        ("vishing", 3),
+        ("smishing", 3),
+    ],
+    "robo_datos": [
+        ("robo de datos", 4),
+        ("robaron mis datos", 4),
+        ("me robaron los datos", 4),
+        ("robaron mis datos personales", 5),
+        ("datos personales", 3),
+        ("mis datos", 2),
+        ("informacion personal", 3),
+        ("hackearon", 4),
+        ("me hackearon", 5),
+        ("hackearon mi cuenta", 5),
+        ("cuenta hackeada", 5),
+        ("accedieron a mi cuenta", 5),
+        ("acceso no autorizado", 4),
+        ("clave principal", 3),
+        ("clave dinamica", 3),
+        ("contrasena", 3),
+        ("codigo de seguridad", 3),
+        ("codigos de seguridad", 3),
+        ("codigo otp", 4),
+        ("otp", 3),
+        ("token", 2),
+        ("robaron mi clave", 5),
+        ("robaron mi contrasena", 5),
+    ],
+    "tarjeta": [
+        ("tarjeta", 2),
+        ("tarjetas", 2),
+        ("mi tarjeta", 3),
+        ("mis tarjetas", 3),
+        ("tarjeta de credito", 4),
+        ("tarjeta credito", 4),
+        ("tarjeta de debito", 4),
+        ("tarjeta debito", 4),
+        ("cvv", 4),
+        ("clonaron", 3),
+        ("clonaron mi tarjeta", 5),
+        ("clonacion", 3),
+        ("compra no reconocida", 5),
+        ("compras no reconocidas", 5),
+        ("compra que no realice", 5),
+        ("compra que no hice", 5),
+        ("compra que no reconozco", 5),
+        ("no realice la compra", 5),
+        ("cargo no reconocido", 5),
+        ("cargos no reconocidos", 5),
+        ("transaccion no reconocida", 4),
+        ("transaccion no autorizada", 4),
+        ("movimiento no reconocido", 4),
+        ("movimiento no autorizado", 4),
+        ("avance", 2),
+        ("cajero", 2),
+        ("retiro no reconocido", 4),
+        ("retiro no autorizado", 4),
+    ],
+    "transaccion_no_autorizada": [
+        ("transaccion no autorizada", 5),
+        ("transacciones no autorizadas", 5),
+        ("operacion no autorizada", 5),
+        ("operaciones no autorizadas", 5),
+        ("movimiento no autorizado", 5),
+        ("movimientos no autorizados", 5),
+        ("transferencia no autorizada", 5),
+        ("transferencias no autorizadas", 5),
+        ("transferencias sin autorizacion", 5),
+        ("sin haber autorizado", 4),
+        ("sin autorizacion", 3),
+        ("sin mi autorizacion", 4),
+        ("sin mi previa autorizacion", 5),
+        ("jamas autorizo", 4),
+        ("nunca autorizo", 4),
+        ("no autorice", 4),
+        ("no autorizado", 4),
+        ("no autorizada", 4),
+        ("transferencias fueron generadas", 4),
+        ("generaron transacciones", 4),
+        ("hicieron un pago", 3),
+        ("pago a pse", 3),
+        ("telefono robado", 4),
+        ("celular robado", 4),
+        ("telefono hurtado", 4),
+        ("dinero hurtado", 4),
+        ("dinero reversado", 3),
+        ("dinero desaparecido", 4),
+        ("desaparecio dinero", 4),
+        ("se me desaparecio dinero", 5),
+        ("no fue devuelta", 4),
+        ("nunca fue devuelta", 4),
+        ("saldo en cero", 4),
+        ("reajustado el canje", 4),
+        ("canje", 2),
+    ],
+    "contacto_no_oficial": [
+        ("suplantador", 5),
+        ("asesor falso", 5),
+        ("falso asesor", 5),
+        ("mensaje de un asesor", 4),
+        ("chat no empresarial", 5),
+        ("chat no oficial", 5),
+        ("canal no oficial", 5),
+        ("sin verificacion", 4),
+        ("sin validacion", 4),
+        ("documento de identidad", 4),
+        ("dato sensible", 4),
+        ("datos sensibles", 4),
+        ("subir documento", 4),
+        ("solicitaba subir documento", 5),
+        ("abrir una cuenta", 3),
+        ("cuenta de ahorro empresarial", 3),
+        ("requerimientos se hacen presencial", 3),
+    ],
+}
+
+DOLOR_CLIENTE_ETIQUETAS = {
+    "falsificacion": "Falsificacion",
+    "estafa": "Estafa",
+    "robo_datos": "Robo de datos",
+    "tarjeta": "Fraude con tarjeta",
+    "transaccion_no_autorizada": "Transaccion no autorizada",
+    "contacto_no_oficial": "Contacto no oficial",
+    "queja_bancaria_general": "Queja bancaria general",
+    "servicio_tramite_bancario": "Servicio o tramite bancario",
+    "sin_clasificar": "Casos por revisar",
+    "sin_publicaciones": "Sin publicaciones",
+}
+
+SUBMODALIDAD_CLIENTE_CATEGORIAS = {
+    "compra_no_reconocida_tarjeta": [
+        ("compra no reconocida", 5),
+        ("compras no reconocidas", 5),
+        ("compra que no realice", 5),
+        ("compra que no hice", 5),
+        ("compra que no reconozco", 5),
+        ("no realice la compra", 5),
+        ("cargo no reconocido", 5),
+        ("cargos no reconocidos", 5),
+        ("tarjeta de credito", 2),
+        ("tarjeta de debito", 2),
+    ],
+    "clonacion_tarjeta": [
+        ("clonaron mi tarjeta", 5),
+        ("clonaron", 4),
+        ("clonacion", 4),
+        ("cvv", 3),
+    ],
+    "retiro_cajero_no_reconocido": [
+        ("retiro no reconocido", 5),
+        ("retiro no autorizado", 5),
+        ("cajero", 3),
+        ("cajeros", 3),
+    ],
+    "uso_fraudulento_tarjeta": [
+        ("tarjeta", 2),
+        ("tarjetas", 2),
+        ("mi tarjeta", 3),
+        ("mis tarjetas", 3),
+        ("tarjeta de credito", 4),
+        ("tarjeta credito", 4),
+        ("tarjeta de debito", 4),
+        ("tarjeta debito", 4),
+    ],
+    "credito_no_solicitado": [
+        ("credito no solicitado", 5),
+        ("credito nunca fue solicitado", 5),
+        ("credito a mi nombre", 5),
+        ("credito a tu nombre", 5),
+        ("sacaron un credito", 5),
+        ("no solicite", 4),
+        ("nunca solicite", 4),
+    ],
+    "falsificacion_documental": [
+        ("falsificaron mi firma", 5),
+        ("firma falsa", 5),
+        ("documento falso", 5),
+        ("documentos falsos", 5),
+        ("cedula falsa", 5),
+        ("falsificaron", 4),
+    ],
+    "suplantacion_identidad": [
+        ("suplantaron mi identidad", 5),
+        ("suplantacion", 4),
+        ("suplantaron", 4),
+        ("a mi nombre", 3),
+        ("mi nombre", 2),
+        ("productos fraudulentos", 3),
+    ],
+    "phishing_correo_enlace": [
+        ("phishing", 5),
+        ("correo falso", 4),
+        ("correos falsos", 4),
+        ("correo sospechoso", 4),
+        ("correos sospechosos", 4),
+        ("enlace falso", 8),
+        ("link falso", 4),
+        ("fraude digital", 5),
+    ],
+    "whatsapp_llamada_falsa": [
+        ("whatsapp falso", 5),
+        ("llamada fraudulenta", 5),
+        ("vishing", 4),
+        ("smishing", 4),
+    ],
+    "qr_o_cuenta_falsa": [
+        ("qr falso", 5),
+        ("cuenta falsa", 5),
+    ],
+    "robo_credenciales_otp": [
+        ("codigo otp", 5),
+        ("otp", 4),
+        ("clave dinamica", 5),
+        ("clave principal", 4),
+        ("codigo de seguridad", 4),
+        ("codigos de seguridad", 4),
+        ("token", 3),
+        ("contrasena", 3),
+        ("robaron mi clave", 5),
+        ("robaron mi contrasena", 5),
+    ],
+    "acceso_no_autorizado_cuenta": [
+        ("hackearon mi cuenta", 5),
+        ("cuenta hackeada", 5),
+        ("accedieron a mi cuenta", 5),
+        ("acceso no autorizado", 5),
+        ("vulneracion de seguridad de mi cuenta", 5),
+        ("vulneracion de seguridad", 4),
+        ("ciberseguridad", 3),
+        ("me hackearon", 4),
+        ("hackearon", 4),
+    ],
+    "debito_sin_consentimiento": [
+        ("cobros ilegales", 5),
+        ("debitado sin mi consentimiento", 5),
+        ("debitados sin mi consentimiento", 5),
+        ("dineros debitados", 4),
+        ("debitado de mi cuenta", 4),
+        ("debito no autorizado", 5),
+        ("debitos no autorizados", 5),
+    ],
+    "transacciones_desconocidas_autenticacion": [
+        ("transacciones desconocidas", 5),
+        ("transaccion desconocida", 5),
+        ("fallas en los mecanismos de autenticacion", 5),
+        ("mecanismos de autenticacion", 4),
+        ("consumidor financiero", 2),
+        ("usuarios del sistema financiero", 2),
+    ],
+    "dinero_desaparecido_saldo_no_reintegrado": [
+        ("dinero desaparecido", 5),
+        ("desaparecio dinero", 5),
+        ("se me desaparecio dinero", 6),
+        ("dinero de la cuenta", 4),
+        ("no fue devuelta", 5),
+        ("nunca fue devuelta", 5),
+        ("saldo en cero", 5),
+        ("reajustado el canje", 5),
+        ("canje", 3),
+    ],
+    "demora_tramite_credito_leasing": [
+        ("leasing habitacional", 6),
+        ("solicitud de credito de vivienda", 6),
+        ("credito de vivienda", 5),
+        ("remodelacion", 4),
+        ("falta de respuesta", 5),
+        ("agotado todos los canales", 5),
+        ("agote todos los canales", 5),
+        ("tramite con una solicitud", 4),
+        ("meses en tramite", 4),
+    ],
+    "transferencia_no_autorizada": [
+        ("transferencia no autorizada", 5),
+        ("transferencias no autorizadas", 5),
+        ("transferencias sin autorizacion", 5),
+        ("transaccion no autorizada", 4),
+        ("transacciones no autorizadas", 4),
+        ("operaciones no autorizadas", 4),
+        ("sin haber autorizado", 4),
+        ("jamas autorizo", 4),
+        ("nunca autorizo", 4),
+        ("no autorice", 4),
+        ("sin mi autorizacion", 4),
+        ("sin mi previa autorizacion", 5),
+        ("transferencias fueron generadas", 4),
+        ("generaron transacciones", 4),
+    ],
+    "pago_pse_no_reconocido": [
+        ("pago a pse", 5),
+        ("pago pse", 5),
+        ("hicieron un pago", 4),
+        ("pse", 3),
+    ],
+    "operacion_por_celular_robado": [
+        ("telefono robado", 5),
+        ("celular robado", 5),
+        ("telefono hurtado", 5),
+        ("telefono movil", 3),
+        ("hurto con arma", 4),
+        ("dinero hurtado", 4),
+        ("dinero reversado", 3),
+    ],
+    "pago_qr_comercio_falso": [
+        ("pagos por qr", 5),
+        ("pago por qr", 5),
+        ("codigo qr", 4),
+        ("punto de venta", 3),
+        ("latam airlines", 4),
+        ("no recibe pagos por qr", 5),
+        ("dejaron de respondernos", 4),
+    ],
+    "asesor_falso_chat_no_oficial": [
+        ("suplantador", 5),
+        ("asesor falso", 5),
+        ("falso asesor", 5),
+        ("mensaje de un asesor", 4),
+        ("chat no empresarial", 5),
+        ("chat no oficial", 5),
+        ("canal no oficial", 5),
+        ("sin verificacion", 4),
+    ],
+    "solicitud_documentos_canal_no_oficial": [
+        ("documento de identidad", 5),
+        ("dato sensible", 5),
+        ("datos sensibles", 5),
+        ("subir documento", 4),
+        ("solicitaba subir documento", 5),
+        ("cuenta de ahorro empresarial", 3),
+        ("requerimientos se hacen presencial", 3),
+    ],
+    "proceso_juridico_reintegro": [
+        ("sentencia favorable", 5),
+        ("sentencia anticipada", 5),
+        ("declaratoria de responsabilidad", 4),
+        ("responsabilidad contractual", 4),
+        ("reintegro total", 5),
+        ("reintegro de", 4),
+        ("accion de proteccion", 5),
+        ("proteccion al consumidor", 4),
+        ("superintendencia financiera", 3),
+        ("delegatura", 3),
+    ],
+    "queja_bancaria_general": [
+        ("millones de quejas", 5),
+        ("quejas relacionadas", 4),
+        ("atencion y operacion bancaria", 4),
+        ("operacion bancaria", 3),
+        ("record historico de quejas", 5),
+        ("malestar", 2),
+    ],
+    "estafa_por_transferencia_o_pago": [
+        ("me estafaron", 5),
+        ("nos estafaron", 5),
+        ("estafaron", 4),
+        ("pague y no recibi", 5),
+        ("transferi", 3),
+        ("transferencia fraudulenta", 4),
+    ],
+    "estafa_canal_no_identificado": [
+        ("estafa", 3),
+        ("estafas", 3),
+        ("estafador", 3),
+        ("estafadores", 3),
+        ("fraude", 1),
+        ("fraudulento", 2),
+        ("fraudulenta", 2),
+        ("victima", 2),
+        ("victimas", 2),
+    ],
+}
+
+SUBMODALIDAD_CLIENTE_ETIQUETAS = {
+    "compra_no_reconocida_tarjeta": "Compra no reconocida con tarjeta",
+    "clonacion_tarjeta": "Clonacion de tarjeta",
+    "retiro_cajero_no_reconocido": "Retiro en cajero no reconocido",
+    "uso_fraudulento_tarjeta": "Uso fraudulento de tarjeta",
+    "credito_no_solicitado": "Credito no solicitado",
+    "falsificacion_documental": "Falsificacion documental",
+    "suplantacion_identidad": "Suplantacion de identidad",
+    "phishing_correo_enlace": "Phishing, correo o enlace falso",
+    "whatsapp_llamada_falsa": "WhatsApp o llamada falsa",
+    "qr_o_cuenta_falsa": "QR o cuenta falsa",
+    "robo_credenciales_otp": "Robo de credenciales u OTP",
+    "acceso_no_autorizado_cuenta": "Acceso no autorizado a cuenta",
+    "debito_sin_consentimiento": "Debito sin consentimiento",
+    "transacciones_desconocidas_autenticacion": "Transacciones desconocidas por autenticacion",
+    "dinero_desaparecido_saldo_no_reintegrado": "Dinero desaparecido o saldo no reintegrado",
+    "demora_tramite_credito_leasing": "Demora o falta de respuesta en credito/leasing",
+    "transferencia_no_autorizada": "Transferencia no autorizada",
+    "pago_pse_no_reconocido": "Pago PSE no reconocido",
+    "operacion_por_celular_robado": "Operacion por celular robado",
+    "pago_qr_comercio_falso": "Pago QR a comercio falso",
+    "asesor_falso_chat_no_oficial": "Asesor falso o chat no oficial",
+    "solicitud_documentos_canal_no_oficial": "Solicitud de documentos por canal no oficial",
+    "proceso_juridico_reintegro": "Proceso juridico o reintegro por fraude",
+    "queja_bancaria_general": "Queja bancaria general",
+    "estafa_por_transferencia_o_pago": "Estafa por transferencia o pago",
+    "estafa_canal_no_identificado": "Estafa reportada sin canal identificado",
+    "caso_fraude_por_clasificar": "Casos por revisar",
+}
+
+SUBMODALIDAD_GRUPO_DOLOR = {
+    "compra_no_reconocida_tarjeta": "tarjeta",
+    "clonacion_tarjeta": "tarjeta",
+    "retiro_cajero_no_reconocido": "tarjeta",
+    "uso_fraudulento_tarjeta": "tarjeta",
+    "credito_no_solicitado": "falsificacion",
+    "falsificacion_documental": "falsificacion",
+    "suplantacion_identidad": "falsificacion",
+    "phishing_correo_enlace": "estafa",
+    "whatsapp_llamada_falsa": "estafa",
+    "qr_o_cuenta_falsa": "estafa",
+    "robo_credenciales_otp": "robo_datos",
+    "acceso_no_autorizado_cuenta": "robo_datos",
+    "debito_sin_consentimiento": "transaccion_no_autorizada",
+    "transacciones_desconocidas_autenticacion": "transaccion_no_autorizada",
+    "dinero_desaparecido_saldo_no_reintegrado": "transaccion_no_autorizada",
+    "transferencia_no_autorizada": "transaccion_no_autorizada",
+    "pago_pse_no_reconocido": "transaccion_no_autorizada",
+    "operacion_por_celular_robado": "transaccion_no_autorizada",
+    "pago_qr_comercio_falso": "estafa",
+    "asesor_falso_chat_no_oficial": "contacto_no_oficial",
+    "solicitud_documentos_canal_no_oficial": "contacto_no_oficial",
+    "proceso_juridico_reintegro": "queja_bancaria_general",
+    "queja_bancaria_general": "queja_bancaria_general",
+    "demora_tramite_credito_leasing": "servicio_tramite_bancario",
+}
+
+MODALIDAD_FALLBACK_ETIQUETAS = {
+    "falsificacion": "Posible falsificacion o suplantacion documental",
+    "estafa": "Estafa reportada sin canal identificado",
+    "robo_datos": "Compromiso de datos o credenciales",
+    "tarjeta": "Uso fraudulento de tarjeta",
+    "transaccion_no_autorizada": "Operacion bancaria no autorizada",
+    "contacto_no_oficial": "Contacto por canal no oficial",
+}
+
+ETIQUETAS_GRAFICAS_BANCOS = {
+    "Banco Popular Colombia": "Popular",
+    "Banco Davivienda": "Davivienda",
+    "Bancolombia": "Bancolombia",
+    "Banco de Bogotá": "Bogota",
+    "BBVA Colombia": "BBVA",
+    "Banco Agrario de Colombia": "Agrario",
+    "Scotiabank Colpatria": "Scotiabank",
+    "Banco de Occidente": "Occidente",
+    "Banco AV Villas": "AV Villas",
+    "Banco Caja Social": "Caja Social",
+}
+
 CONSULTAS_BUSQUEDA = [
     {
         "etiqueta": "fraude",
@@ -823,6 +1321,249 @@ def combinar_terminos(*listas_terminos):
                 combinados.append(termino)
 
     return combinados
+
+
+def clasificar_por_diccionario(texto_normalizado, categorias):
+    resultados = []
+
+    for categoria, terminos_pesos in categorias.items():
+        puntaje = 0
+        encontrados = []
+
+        for termino, peso in terminos_pesos:
+            termino_normalizado = normalizar_texto_busqueda(termino)
+
+            if termino_normalizado and f" {termino_normalizado} " in texto_normalizado:
+                puntaje += peso
+                encontrados.append(termino)
+
+        if puntaje:
+            resultados.append(
+                {
+                    "categoria": categoria,
+                    "puntaje": puntaje,
+                    "terminos": encontrados,
+                }
+            )
+
+    resultados.sort(key=lambda item: item["puntaje"], reverse=True)
+
+    return resultados
+
+
+def modalidad_especifica_desde_resultados(resultados_submodalidad, categoria_general):
+    if resultados_submodalidad:
+        return SUBMODALIDAD_CLIENTE_ETIQUETAS.get(
+            resultados_submodalidad[0]["categoria"],
+            resultados_submodalidad[0]["categoria"],
+        )
+
+    if categoria_general and categoria_general != "sin_clasificar":
+        return MODALIDAD_FALLBACK_ETIQUETAS.get(
+            categoria_general,
+            DOLOR_CLIENTE_ETIQUETAS.get(categoria_general, categoria_general),
+        )
+
+    return SUBMODALIDAD_CLIENTE_ETIQUETAS["caso_fraude_por_clasificar"]
+
+
+def clasificar_dolor_cliente(texto):
+    texto_normalizado = f" {normalizar_texto_busqueda(texto)} "
+    resultados = clasificar_por_diccionario(
+        texto_normalizado,
+        DOLOR_CLIENTE_CATEGORIAS,
+    )
+    resultados_submodalidad = clasificar_por_diccionario(
+        texto_normalizado,
+        SUBMODALIDAD_CLIENTE_CATEGORIAS,
+    )
+
+    if not resultados and resultados_submodalidad:
+        principal_submodalidad = resultados_submodalidad[0]
+        grupo_inferido = SUBMODALIDAD_GRUPO_DOLOR.get(
+            principal_submodalidad["categoria"],
+            "sin_clasificar",
+        )
+        terminos_detectados = combinar_terminos(
+            *[resultado["terminos"] for resultado in resultados_submodalidad],
+        )
+        confianza = min(0.9, 0.45 + principal_submodalidad["puntaje"] * 0.08)
+
+        return {
+            "dolor_cliente": grupo_inferido,
+            "dolor_cliente_secundario": "",
+            "modalidad_especifica": modalidad_especifica_desde_resultados(
+                resultados_submodalidad,
+                grupo_inferido,
+            ),
+            "confianza_dolor": round(confianza, 2),
+            "palabras_dolor_detectadas": ", ".join(terminos_detectados),
+        }
+
+    if not resultados:
+        return {
+            "dolor_cliente": "sin_clasificar",
+            "dolor_cliente_secundario": "",
+            "modalidad_especifica": modalidad_especifica_desde_resultados(
+                resultados_submodalidad,
+                "sin_clasificar",
+            ),
+            "confianza_dolor": 0,
+            "palabras_dolor_detectadas": "",
+        }
+
+    principal = resultados[0]
+    secundario = ""
+
+    if len(resultados) > 1:
+        candidato = resultados[1]
+        if candidato["puntaje"] >= 2 and candidato["puntaje"] >= principal["puntaje"] * 0.45:
+            secundario = candidato["categoria"]
+
+    puntaje_secundario = resultados[1]["puntaje"] if len(resultados) > 1 else 0
+    margen = principal["puntaje"] - puntaje_secundario
+    confianza = min(0.95, 0.45 + principal["puntaje"] * 0.08 + margen * 0.04)
+    terminos_detectados = combinar_terminos(
+        *[resultado["terminos"] for resultado in resultados],
+        *[resultado["terminos"] for resultado in resultados_submodalidad],
+    )
+
+    return {
+        "dolor_cliente": principal["categoria"],
+        "dolor_cliente_secundario": secundario,
+        "modalidad_especifica": modalidad_especifica_desde_resultados(
+            resultados_submodalidad,
+            principal["categoria"],
+        ),
+        "confianza_dolor": round(confianza, 2),
+        "palabras_dolor_detectadas": ", ".join(terminos_detectados),
+    }
+
+
+def agregar_dolor_cliente_a_filas(filas):
+    for fila in filas:
+        clasificacion = clasificar_dolor_cliente(fila.get("texto", ""))
+        modalidad_actual = (fila.get("dolor_cliente") or "").strip()
+        especifica_actual = (fila.get("modalidad_especifica") or "").strip()
+        modalidades_genericas = set(DOLOR_CLIENTE_ETIQUETAS.values())
+
+        if (
+            not modalidad_actual
+            or modalidad_actual == "sin_clasificar"
+            or not especifica_actual
+            or especifica_actual in modalidades_genericas
+        ):
+            fila.update(clasificacion)
+            continue
+
+        for clave, valor in clasificacion.items():
+            if not fila.get(clave):
+                fila[clave] = valor
+
+
+def marcar_descartadas_sin_modalidad(filas):
+    for fila in filas:
+        fila["dolor_cliente"] = "descartada"
+        fila["dolor_cliente_secundario"] = ""
+        fila["modalidad_especifica"] = "No aplica - publicacion descartada"
+        fila["confianza_dolor"] = ""
+        fila["palabras_dolor_detectadas"] = ""
+
+
+def campos_dolor_cliente():
+    return [
+        "grupo_modalidad",
+        "modalidad_reportada",
+        "publicaciones",
+        "participacion_porcentaje",
+        "bancos_impactados",
+        "palabras_detectadas",
+    ]
+
+
+def filas_resumen_dolor_cliente(publicaciones):
+    total = len(publicaciones)
+
+    if not publicaciones:
+        return [
+            {
+                "grupo_modalidad": DOLOR_CLIENTE_ETIQUETAS["sin_publicaciones"],
+                "modalidad_reportada": DOLOR_CLIENTE_ETIQUETAS["sin_publicaciones"],
+                "publicaciones": 0,
+                "participacion_porcentaje": 0,
+                "bancos_impactados": "",
+                "palabras_detectadas": "",
+            }
+        ]
+
+    acumulados = {}
+
+    for publicacion in publicaciones:
+        clasificacion = clasificar_dolor_cliente(publicacion.get("texto", ""))
+        grupo = (
+            publicacion.get("dolor_cliente")
+            or clasificacion["dolor_cliente"]
+            or "sin_clasificar"
+        )
+        modalidad = (
+            publicacion.get("modalidad_especifica")
+            or clasificacion["modalidad_especifica"]
+        )
+        palabras = (
+            publicacion.get("palabras_dolor_detectadas")
+            or clasificacion["palabras_dolor_detectadas"]
+        )
+
+        if modalidad not in acumulados:
+            acumulados[modalidad] = {
+                "grupo": grupo,
+                "modalidad": modalidad,
+                "publicaciones": 0,
+                "palabras": Counter(),
+                "bancos": Counter(),
+            }
+
+        acumulados[modalidad]["publicaciones"] += 1
+        acumulados[modalidad]["bancos"][publicacion.get("banco") or "Sin banco"] += 1
+
+        for palabra in palabras.split(","):
+            palabra = limpiar_linea(palabra)
+            if palabra:
+                acumulados[modalidad]["palabras"][palabra] += 1
+
+    filas = []
+
+    for acumulado in acumulados.values():
+        publicaciones_categoria = acumulado["publicaciones"]
+        palabras_detectadas = ", ".join(
+            palabra
+            for palabra, _ in acumulado["palabras"].most_common(8)
+        )
+        bancos_impactados = ", ".join(
+            f"{banco} ({total_banco})"
+            for banco, total_banco in acumulado["bancos"].most_common()
+        )
+        filas.append(
+            {
+                "grupo_modalidad": DOLOR_CLIENTE_ETIQUETAS.get(
+                    acumulado["grupo"],
+                    acumulado["grupo"],
+                ),
+                "modalidad_reportada": acumulado["modalidad"],
+                "publicaciones": publicaciones_categoria,
+                "participacion_porcentaje": round(
+                    (publicaciones_categoria / total) * 100,
+                    2,
+                ),
+                "bancos_impactados": bancos_impactados,
+                "palabras_detectadas": palabras_detectadas,
+            }
+        )
+
+    return sorted(
+        filas,
+        key=lambda fila: (-fila["publicaciones"], fila["modalidad_reportada"]),
+    )
 
 
 def evaluar_relevancia_publicacion(banco, texto_publicacion, texto_visible):
@@ -1293,23 +2034,50 @@ def limpiar_texto_publicacion(texto):
     return "\n".join(linea for linea in lineas if linea)
 
 
-def extraer_metricas(texto_visible):
+def extraer_metricas(texto_visible, texto_metricas=""):
     metricas = {
         "reacciones": "",
         "comentarios": "",
         "compartidos": "",
     }
+    texto = "\n".join(
+        parte for parte in (texto_metricas, texto_visible) if parte
+    )
+    numero = r"(\d[\d.,]*(?:\s*(?:mil|k))?)"
 
     patrones = {
-        "reacciones": r"(\d[\d.,]*(?:\s*(?:mil|k))?)\s+reacciones?",
-        "comentarios": r"(\d[\d.,]*(?:\s*(?:mil|k))?)\s+comentarios?",
-        "compartidos": r"(\d[\d.,]*(?:\s*(?:mil|k))?)\s+veces compartido",
+        "reacciones": [
+            rf"{numero}\s+reacciones?",
+            rf"{numero}\s+likes?",
+        ],
+        "comentarios": [
+            rf"{numero}\s+comentarios?",
+            rf"{numero}\s+comments?",
+        ],
+        "compartidos": [
+            rf"{numero}\s+(?:veces\s+)?compartid[oa]s?",
+            rf"compartid[oa]\s+{numero}\s+veces",
+            rf"{numero}\s+reposts?",
+            rf"{numero}\s+republicaciones?",
+            rf"{numero}\s+shares?",
+        ],
     }
 
-    for nombre, patron in patrones.items():
-        coincidencia = re.search(patron, texto_visible or "", flags=re.IGNORECASE)
+    for nombre, patrones_nombre in patrones.items():
+        for patron in patrones_nombre:
+            coincidencia = re.search(patron, texto or "", flags=re.IGNORECASE)
+            if coincidencia:
+                metricas[nombre] = limpiar_linea(coincidencia.group(1))
+                break
+
+    if not metricas["reacciones"]:
+        coincidencia = re.search(
+            rf"\by\s+{numero}\s+personas?\s+m[aá]s\b",
+            texto or "",
+            flags=re.IGNORECASE,
+        )
         if coincidencia:
-            metricas[nombre] = limpiar_linea(coincidencia.group(1))
+            metricas["reacciones"] = str(convertir_metrica_a_entero(coincidencia.group(1)) + 1)
 
     return metricas
 
@@ -1414,13 +2182,37 @@ def extraer_datos_item_publicacion(item):
                 const href = link.href || '';
                 return href.includes('/feed/update/') || href.includes('/activity-');
             });
+            const limpiar = (valor) => (
+                valor || ''
+            ).replace(/\\s+/g, ' ').trim();
+            const textosMetricas = [];
+            const patronMetricas = /reacci|coment|compart|repost|like|comment|share/i;
+            const candidatosMetricas = Array.from(
+                el.querySelectorAll('[aria-label], [title], button, a, span, li')
+            ).slice(0, 220);
+
+            for (const nodo of candidatosMetricas) {
+                const valores = [
+                    nodo.innerText,
+                    nodo.textContent,
+                    nodo.getAttribute('aria-label'),
+                    nodo.getAttribute('title')
+                ].map(limpiar).filter(Boolean);
+
+                for (const valor of valores) {
+                    if (patronMetricas.test(valor) && !textosMetricas.includes(valor)) {
+                        textosMetricas.push(valor);
+                    }
+                }
+            }
 
             return {
                 texto: (textoEl.innerText || '').trim(),
                 autor: autor,
                 url_autor: urlAutor,
                 url_publicacion: postLink ? postLink.href : '',
-                texto_visible: el.innerText || ''
+                texto_visible: el.innerText || '',
+                texto_metricas: textosMetricas.join('\\n')
             };
         }
         """
@@ -1515,7 +2307,7 @@ def extraer_publicaciones_visibles(
             texto_publicacion,
             texto_visible,
         )
-        metricas = extraer_metricas(texto_visible)
+        metricas = extraer_metricas(texto_visible, datos.get("texto_metricas", ""))
         es_descartada = filtrar_por_relevancia and not evaluacion["es_relevante"]
 
         if es_descartada and not guardar_descartadas:
@@ -1656,6 +2448,11 @@ def campos_resultados():
         "rango_fecha_inicio",
         "rango_fecha_fin",
         "tipo_contenido",
+        "dolor_cliente",
+        "dolor_cliente_secundario",
+        "modalidad_especifica",
+        "confianza_dolor",
+        "palabras_dolor_detectadas",
         "relevancia",
         "motivo_relevancia",
         "terminos_banco",
@@ -1721,17 +2518,71 @@ def es_numero_excel(valor):
     return isinstance(valor, (int, float)) and not isinstance(valor, bool)
 
 
-def celda_excel_xml(fila, columna, valor):
+def celda_excel_xml(fila, columna, valor, estilo=None):
     referencia = f"{letra_columna_excel(columna)}{fila}"
+    atributos = f' r="{referencia}"'
+
+    if estilo is not None:
+        atributos += f' s="{estilo}"'
 
     if es_numero_excel(valor):
-        return f'<c r="{referencia}"><v>{valor}</v></c>'
+        return f"<c{atributos}><v>{valor}</v></c>"
 
     return (
-        f'<c r="{referencia}" t="inlineStr">'
+        f'<c{atributos} t="inlineStr">'
         f'<is><t xml:space="preserve">{limpiar_valor_xml(valor)}</t></is>'
         f"</c>"
     )
+
+
+def ancho_columna_excel(campo):
+    anchos = {
+        "banco": 28,
+        "etiqueta_grafica": 18,
+        "busqueda": 32,
+        "autor": 28,
+        "texto": 72,
+        "url": 42,
+        "motivo_relevancia": 36,
+        "detalle_error": 48,
+        "imagen_publicacion": 44,
+        "archivo_imagen": 34,
+        "rango_fecha": 24,
+        "rango_fecha_inicio": 18,
+        "rango_fecha_fin": 18,
+        "fecha_recoleccion": 24,
+        "fecha_publicacion_estimada": 24,
+        "dolor_cliente": 20,
+        "dolor_cliente_secundario": 24,
+        "modalidad_especifica": 36,
+        "confianza_dolor": 18,
+        "palabras_dolor_detectadas": 42,
+        "participacion_total_porcentaje": 26,
+        "diferencia_vs_banco_popular": 28,
+        "interacciones_total": 20,
+        "ranking_denuncias": 20,
+        "denuncias_directas": 20,
+        "denuncias_descartadas": 22,
+        "modalidad_reportada": 24,
+        "participacion_porcentaje": 24,
+        "palabras_detectadas": 42,
+    }
+
+    return anchos.get(campo, 18)
+
+
+def etiqueta_grafica_banco(banco):
+    return ETIQUETAS_GRAFICAS_BANCOS.get(banco, banco or "Sin banco")
+
+
+def agregar_etiqueta_grafica_banco(filas):
+    return [
+        {
+            **fila,
+            "etiqueta_grafica": etiqueta_grafica_banco(fila.get("banco")),
+        }
+        for fila in filas
+    ]
 
 
 def hoja_datos_excel_xml(filas, campos):
@@ -1744,36 +2595,51 @@ def hoja_datos_excel_xml(filas, campos):
     alto = max(len(filas_excel), 1)
     dimension = f"A1:{letra_columna_excel(ancho)}{alto}"
     columnas = "".join(
-        f'<col min="{indice}" max="{indice}" width="18" customWidth="1"/>'
-        for indice in range(1, ancho + 1)
+        f'<col min="{indice}" max="{indice}" '
+        f'width="{ancho_columna_excel(campo)}" customWidth="1"/>'
+        for indice, campo in enumerate(campos, start=1)
     )
     filas_xml = []
 
     for numero_fila, valores in enumerate(filas_excel, start=1):
+        if numero_fila == 1:
+            estilo = 1
+        else:
+            estilo = 3 if (numero_fila - 1) % 2 == 0 else 2
+
         celdas = "".join(
-            celda_excel_xml(numero_fila, indice, valor)
+            celda_excel_xml(numero_fila, indice, valor, estilo)
             for indice, valor in enumerate(valores, start=1)
         )
         filas_xml.append(f'<row r="{numero_fila}">{celdas}</row>')
+
+    filtro = f'<autoFilter ref="{dimension}"/>' if len(filas_excel) > 1 else ""
 
     return (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
         'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
         f'<dimension ref="{dimension}"/>'
+        '<sheetViews><sheetView workbookViewId="0">'
+        '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'
+        '<selection pane="bottomLeft"/>'
+        '</sheetView></sheetViews>'
+        '<sheetFormatPr defaultRowHeight="18"/>'
         f"<cols>{columnas}</cols>"
         f"<sheetData>{''.join(filas_xml)}</sheetData>"
+        f"{filtro}"
         "</worksheet>"
     )
 
 
 def hoja_graficas_excel_xml():
     filas = [
-        {"seccion": "Graficas", "descripcion": "Denuncias, comparativo e interacciones por banco"},
+        {"seccion": "Graficas", "descripcion": "Denuncias, modalidad reportada, participacion, ranking y tiempos"},
         {"seccion": "1", "descripcion": "Denuncias directas por banco"},
         {"seccion": "2", "descripcion": "Participacion porcentual por banco"},
-        {"seccion": "3", "descripcion": "Interacciones promedio por banco"},
+        {"seccion": "3", "descripcion": "Ranking de denuncias por banco"},
         {"seccion": "4", "descripcion": "Tiempo de ejecucion por banco"},
+        {"seccion": "5", "descripcion": "Modalidad reportada"},
     ]
     hoja = hoja_datos_excel_xml(filas, ["seccion", "descripcion"])
     return hoja.replace("</worksheet>", '<drawing r:id="rId1"/></worksheet>')
@@ -1802,6 +2668,39 @@ def rango_excel(nombre_hoja, columna, fila_inicio, fila_fin):
     return f"'{nombre_hoja}'!${columna}${fila_inicio}:${columna}${fila_fin}"
 
 
+def layout_grafica_xml(direccion):
+    if direccion == "bar":
+        return (
+            '<c:layout><c:manualLayout>'
+            '<c:layoutTarget val="inner"/>'
+            '<c:xMode val="factor"/><c:yMode val="factor"/>'
+            '<c:wMode val="factor"/><c:hMode val="factor"/>'
+            '<c:x val="0.22"/><c:y val="0.08"/>'
+            '<c:w val="0.72"/><c:h val="0.78"/>'
+            '</c:manualLayout></c:layout>'
+        )
+
+    return (
+        '<c:layout><c:manualLayout>'
+        '<c:layoutTarget val="inner"/>'
+        '<c:xMode val="factor"/><c:yMode val="factor"/>'
+        '<c:wMode val="factor"/><c:hMode val="factor"/>'
+        '<c:x val="0.07"/><c:y val="0.08"/>'
+        '<c:w val="0.88"/><c:h val="0.58"/>'
+        '</c:manualLayout></c:layout>'
+    )
+
+
+def texto_eje_categorias_xml():
+    return (
+        '<c:txPr>'
+        '<a:bodyPr rot="-2700000"/><a:lstStyle/>'
+        '<a:p><a:pPr><a:defRPr sz="900"/></a:pPr>'
+        '<a:endParaRPr lang="es-CO"/></a:p>'
+        '</c:txPr>'
+    )
+
+
 def crear_grafica_barras_xml(
     titulo,
     titulo_serie,
@@ -1814,6 +2713,8 @@ def crear_grafica_barras_xml(
     valores,
     eje_x=100001,
     eje_y=100002,
+    direccion="col",
+    color="2F80ED",
 ):
     formula_categorias = rango_excel(
         hoja_datos,
@@ -1828,19 +2729,26 @@ def crear_grafica_barras_xml(
         fila_fin,
     )
 
+    posicion_categoria = "l" if direccion == "bar" else "b"
+    posicion_valor = "b" if direccion == "bar" else "l"
+
     return (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" '
         'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
         'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        '<c:style val="10"/>'
         '<c:chart>'
         '<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r>'
         f'<a:t>{limpiar_valor_xml(titulo)}</a:t>'
         '</a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>'
-        '<c:plotArea><c:layout/>'
-        '<c:barChart><c:barDir val="col"/><c:grouping val="clustered"/>'
+        f'<c:plotArea>{layout_grafica_xml(direccion)}'
+        f'<c:barChart><c:barDir val="{direccion}"/><c:grouping val="clustered"/>'
+        '<c:varyColors val="0"/>'
         '<c:ser><c:idx val="0"/><c:order val="0"/>'
         f'<c:tx><c:v>{limpiar_valor_xml(titulo_serie)}</c:v></c:tx>'
+        f'<c:spPr><a:solidFill><a:srgbClr val="{color}"/></a:solidFill>'
+        '<a:ln><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:ln></c:spPr>'
         '<c:cat><c:strRef>'
         f'<c:f>{limpiar_valor_xml(formula_categorias)}</c:f>'
         f'{cache_categorias_xml(categorias)}'
@@ -1850,18 +2758,24 @@ def crear_grafica_barras_xml(
         f'{cache_numeros_xml(valores)}'
         '</c:numRef></c:val>'
         '</c:ser>'
+        '<c:dLbls><c:showLegendKey val="0"/><c:showVal val="1"/>'
+        '<c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/>'
+        '</c:dLbls>'
         f'<c:axId val="{eje_x}"/><c:axId val="{eje_y}"/>'
         '</c:barChart>'
         f'<c:catAx><c:axId val="{eje_x}"/><c:scaling><c:orientation val="minMax"/></c:scaling>'
-        '<c:axPos val="b"/><c:tickLblPos val="nextTo"/>'
+        f'<c:delete val="0"/><c:axPos val="{posicion_categoria}"/>'
+        '<c:majorTickMark val="none"/><c:minorTickMark val="none"/>'
+        '<c:tickLblPos val="nextTo"/>'
+        f'{texto_eje_categorias_xml()}'
         f'<c:crossAx val="{eje_y}"/><c:crosses val="autoZero"/><c:auto val="1"/>'
+        '<c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="1"/>'
         '</c:catAx>'
         f'<c:valAx><c:axId val="{eje_y}"/><c:scaling><c:orientation val="minMax"/></c:scaling>'
-        '<c:axPos val="l"/><c:majorGridlines/><c:numFmt formatCode="General" sourceLinked="1"/>'
+        f'<c:delete val="0"/><c:axPos val="{posicion_valor}"/><c:majorGridlines/><c:numFmt formatCode="General" sourceLinked="1"/>'
         f'<c:tickLblPos val="nextTo"/><c:crossAx val="{eje_x}"/><c:crosses val="autoZero"/>'
         '</c:valAx>'
         '</c:plotArea>'
-        '<c:legend><c:legendPos val="r"/><c:overlay val="0"/></c:legend>'
         '<c:plotVisOnly val="1"/>'
         '</c:chart>'
         '</c:chartSpace>'
@@ -1892,10 +2806,11 @@ def ancla_grafica_xml(indice, relacion, columna_inicio, fila_inicio, columna_fin
 
 def drawing_graficas_xml():
     anclas = [
-        ancla_grafica_xml(1, "rId1", 0, 6, 8, 23),
-        ancla_grafica_xml(2, "rId2", 9, 6, 17, 23),
-        ancla_grafica_xml(3, "rId3", 0, 25, 8, 42),
-        ancla_grafica_xml(4, "rId4", 9, 25, 17, 42),
+        ancla_grafica_xml(1, "rId1", 0, 6, 17, 25),
+        ancla_grafica_xml(2, "rId2", 0, 27, 17, 46),
+        ancla_grafica_xml(3, "rId3", 0, 48, 17, 67),
+        ancla_grafica_xml(4, "rId4", 0, 69, 17, 88),
+        ancla_grafica_xml(5, "rId5", 0, 90, 17, 109),
     ]
     return (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -1903,6 +2818,44 @@ def drawing_graficas_xml():
         'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
         f"{''.join(anclas)}"
         "</xdr:wsDr>"
+    )
+
+
+def estilos_excel_xml():
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        '<fonts count="2">'
+        '<font><sz val="11"/><color rgb="FF17202A"/><name val="Calibri"/></font>'
+        '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'
+        '</fonts>'
+        '<fills count="4">'
+        '<fill><patternFill patternType="none"/></fill>'
+        '<fill><patternFill patternType="gray125"/></fill>'
+        '<fill><patternFill patternType="solid"><fgColor rgb="FF17202A"/><bgColor indexed="64"/></patternFill></fill>'
+        '<fill><patternFill patternType="solid"><fgColor rgb="FFF4F7FA"/><bgColor indexed="64"/></patternFill></fill>'
+        '</fills>'
+        '<borders count="2">'
+        '<border/>'
+        '<border><left style="thin"><color rgb="FFD8DEE6"/></left>'
+        '<right style="thin"><color rgb="FFD8DEE6"/></right>'
+        '<top style="thin"><color rgb="FFD8DEE6"/></top>'
+        '<bottom style="thin"><color rgb="FFD8DEE6"/></bottom></border>'
+        '</borders>'
+        '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+        '<cellXfs count="4">'
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+        '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1">'
+        '<alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1">'
+        '<alignment vertical="top" wrapText="1"/></xf>'
+        '<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1">'
+        '<alignment vertical="top" wrapText="1"/></xf>'
+        '</cellXfs>'
+        '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+        '<dxfs count="0"/>'
+        '<tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleLight16"/>'
+        '</styleSheet>'
     )
 
 
@@ -1917,90 +2870,126 @@ def crear_reporte_excel(
     campos_resultado = campos_resultados()
     campos_conteo = ["banco", "rango_fecha", "publicaciones"]
     campos_comparativo = campos_comparativo_banco_popular()
+    campos_dolor = campos_dolor_cliente()
     campos_tiempos = campos_tiempos_ejecucion()
+    campos_conteo_excel = ["banco", "etiqueta_grafica", "rango_fecha", "publicaciones"]
+    campos_comparativo_excel = ["banco", "etiqueta_grafica"] + campos_comparativo[1:]
+    campos_tiempos_excel = (
+        ["tipo_tiempo", "banco", "etiqueta_grafica"]
+        + [campo for campo in campos_tiempos if campo not in {"tipo_tiempo", "banco"}]
+    )
+    filas_conteo_excel = agregar_etiqueta_grafica_banco(filas_conteo)
+    filas_comparativo_excel = agregar_etiqueta_grafica_banco(filas_comparativo)
+    filas_tiempos_excel = agregar_etiqueta_grafica_banco(filas_tiempos)
+    filas_dolor_cliente = filas_resumen_dolor_cliente(publicaciones)
     filas_tiempos_banco = [
-        fila for fila in filas_tiempos if fila.get("tipo_tiempo") == "busqueda"
+        fila for fila in filas_tiempos_excel if fila.get("tipo_tiempo") == "busqueda"
     ]
 
     hojas = [
         ("Publicaciones", hoja_datos_excel_xml(publicaciones, campos_publicacion)),
         ("Descartadas", hoja_datos_excel_xml(descartadas, campos_resultado)),
-        ("Conteo por banco", hoja_datos_excel_xml(filas_conteo, campos_conteo)),
+        ("Conteo por banco", hoja_datos_excel_xml(filas_conteo_excel, campos_conteo_excel)),
         (
             "Comparativo Popular",
-            hoja_datos_excel_xml(filas_comparativo, campos_comparativo),
+            hoja_datos_excel_xml(filas_comparativo_excel, campos_comparativo_excel),
         ),
-        ("Tiempos ejecucion", hoja_datos_excel_xml(filas_tiempos, campos_tiempos)),
+        (
+            "Modalidad reportada",
+            hoja_datos_excel_xml(filas_dolor_cliente, campos_dolor),
+        ),
+        ("Tiempos ejecucion", hoja_datos_excel_xml(filas_tiempos_excel, campos_tiempos_excel)),
         ("Graficas", hoja_graficas_excel_xml()),
     ]
 
     total_bancos = len(filas_conteo)
     fila_fin_conteo = total_bancos + 1
     fila_fin_comparativo = len(filas_comparativo) + 1
+    fila_fin_dolor = len(filas_dolor_cliente) + 1
     fila_fin_tiempos = len(filas_tiempos_banco) + 1
-    categorias_conteo = [fila["banco"] for fila in filas_conteo]
+    categorias_conteo = [fila["etiqueta_grafica"] for fila in filas_conteo_excel]
     valores_conteo = [fila["publicaciones"] for fila in filas_conteo]
-    categorias_comparativo = [fila["banco"] for fila in filas_comparativo]
+    categorias_comparativo = [fila["etiqueta_grafica"] for fila in filas_comparativo_excel]
     valores_participacion = [
         fila["participacion_total_porcentaje"] for fila in filas_comparativo
     ]
-    valores_interacciones = [
-        fila["interacciones_promedio"] for fila in filas_comparativo
+    valores_ranking = [
+        fila["ranking_denuncias"] or 0 for fila in filas_comparativo
     ]
-    categorias_tiempos = [fila["banco"] for fila in filas_tiempos_banco]
+    categorias_dolor = [fila["modalidad_reportada"] for fila in filas_dolor_cliente]
+    valores_dolor = [fila["publicaciones"] for fila in filas_dolor_cliente]
+    categorias_tiempos = [fila["etiqueta_grafica"] for fila in filas_tiempos_banco]
     valores_tiempos = [fila["duracion_segundos"] for fila in filas_tiempos_banco]
     graficas = [
         crear_grafica_barras_xml(
             "Denuncias directas por banco",
             "Denuncias",
             "Conteo por banco",
-            "A",
-            "C",
+            "B",
+            "D",
             2,
             fila_fin_conteo,
             categorias_conteo,
             valores_conteo,
             100001,
             100002,
+            color="1F7A4D",
         ),
         crear_grafica_barras_xml(
             "Participacion porcentual por banco",
             "Participacion %",
             "Comparativo Popular",
-            "A",
-            "E",
+            "B",
+            "G",
             2,
             fila_fin_comparativo,
             categorias_comparativo,
             valores_participacion,
             100003,
             100004,
+            color="2F80ED",
         ),
         crear_grafica_barras_xml(
-            "Interacciones promedio por banco",
-            "Interacciones promedio",
+            "Ranking de denuncias por banco",
+            "Ranking",
             "Comparativo Popular",
-            "A",
-            "I",
+            "B",
+            "J",
             2,
             fila_fin_comparativo,
             categorias_comparativo,
-            valores_interacciones,
+            valores_ranking,
             100005,
             100006,
+            color="8A63D2",
         ),
         crear_grafica_barras_xml(
             "Tiempo de ejecucion por banco",
             "Segundos",
             "Tiempos ejecucion",
-            "B",
-            "H",
+            "C",
+            "I",
             2,
             fila_fin_tiempos,
             categorias_tiempos,
             valores_tiempos,
             100007,
             100008,
+            color="F2994A",
+        ),
+        crear_grafica_barras_xml(
+            "Modalidad reportada",
+            "Publicaciones",
+            "Modalidad reportada",
+            "A",
+            "B",
+            2,
+            fila_fin_dolor,
+            categorias_dolor,
+            valores_dolor,
+            100009,
+            100010,
+            color="D64545",
         ),
     ]
 
@@ -2111,21 +3100,14 @@ def crear_reporte_excel(
         )
         archivo.writestr(
             "xl/styles.xml",
-            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            '<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>'
-            '<fills count="1"><fill><patternFill patternType="none"/></fill></fills>'
-            '<borders count="1"><border/></borders>'
-            '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-            '<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>'
-            '</styleSheet>',
+            estilos_excel_xml(),
         )
 
         for indice, (_, xml_hoja) in enumerate(hojas, start=1):
             archivo.writestr(f"xl/worksheets/sheet{indice}.xml", xml_hoja)
 
         archivo.writestr(
-            "xl/worksheets/_rels/sheet6.xml.rels",
+            f"xl/worksheets/_rels/sheet{len(hojas)}.xml.rels",
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
             '<Relationship Id="rId1" '
@@ -2152,11 +3134,10 @@ def campos_comparativo_banco_popular():
         "grupo",
         "rango_fecha",
         "denuncias_directas",
+        "denuncias_descartadas",
         "participacion_total_porcentaje",
         "diferencia_vs_banco_popular",
-        "multiplo_vs_banco_popular",
         "interacciones_total",
-        "interacciones_promedio",
         "ranking_denuncias",
     ]
 
@@ -2180,12 +3161,19 @@ def campos_tiempos_ejecucion():
     ]
 
 
-def guardar_comparativo_banco_popular(publicaciones, conteo, rango_fecha, bancos=None):
+def guardar_comparativo_banco_popular(
+    publicaciones,
+    descartadas,
+    conteo,
+    rango_fecha,
+    bancos=None,
+):
     banco_base = "Banco Popular Colombia"
     bancos = bancos or BANCOS_OBJETIVO
     total_general = sum(conteo.values())
     total_base = conteo.get(banco_base, 0) if banco_base in bancos else None
     interacciones_por_banco = {banco: 0 for banco in bancos}
+    conteo_descartadas = contar_publicaciones_por_banco(descartadas, bancos)
 
     for publicacion in publicaciones:
         banco = publicacion["banco"]
@@ -2212,12 +3200,11 @@ def guardar_comparativo_banco_popular(publicaciones, conteo, rango_fecha, bancos
 
     for banco in bancos:
         total = conteo.get(banco, 0)
+        total_descartadas = conteo_descartadas.get(banco, 0)
         interacciones_total = interacciones_por_banco.get(banco, 0)
 
         participacion = round((total / total_general) * 100, 2) if total_general else 0
-        promedio_interacciones = round(interacciones_total / total, 2) if total else 0
         diferencia = total - total_base if total_base is not None else ""
-        multiplo = round(total / total_base, 2) if total_base else ""
 
         filas_comparativo.append(
             {
@@ -2225,11 +3212,10 @@ def guardar_comparativo_banco_popular(publicaciones, conteo, rango_fecha, bancos
                 "grupo": "Banco Popular" if banco == banco_base else "Otros bancos",
                 "rango_fecha": rango_fecha,
                 "denuncias_directas": total,
+                "denuncias_descartadas": total_descartadas,
                 "participacion_total_porcentaje": participacion,
                 "diferencia_vs_banco_popular": diferencia,
-                "multiplo_vs_banco_popular": multiplo,
                 "interacciones_total": interacciones_total,
-                "interacciones_promedio": promedio_interacciones,
                 "ranking_denuncias": ranking.get(banco, ""),
             }
         )
@@ -2244,6 +3230,9 @@ def guardar_resultados(publicaciones, descartadas, configuracion, tiempos_ejecuc
     rango_fecha = formatear_rango_fecha(configuracion)
     bancos = configuracion.get("bancos_seleccionados", BANCOS_OBJETIVO)
 
+    agregar_dolor_cliente_a_filas(publicaciones)
+    marcar_descartadas_sin_modalidad(descartadas)
+
     campos_publicacion = campos_publicaciones()
     campos = campos_resultados()
     escribir_csv(RUTA_PUBLICACIONES, publicaciones, campos_publicacion)
@@ -2254,6 +3243,7 @@ def guardar_resultados(publicaciones, descartadas, configuracion, tiempos_ejecuc
     conteo = contar_publicaciones_por_banco(publicaciones, bancos)
     filas_comparativo = guardar_comparativo_banco_popular(
         publicaciones,
+        descartadas,
         conteo,
         rango_fecha,
         bancos,
