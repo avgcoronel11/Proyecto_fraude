@@ -136,6 +136,7 @@ PLATAFORMAS = {
         "script": FACEBOOK_PATH,
     },
 }
+PLATAFORMAS_RESUMEN = ["facebook", "linkedin", "instagram"]
 
 BANCOS_OBJETIVO = [
     "Banco Popular Colombia",
@@ -163,7 +164,7 @@ PERFILES_INSTAGRAM = {
 }
 
 PERFILES_FACEBOOK = {
-    "Banco Popular Colombia": "https://web.facebook.com/BancoPopular",
+    "Banco Popular Colombia": "https://web.facebook.com/BancoPopular?locale=es_LA",
     "Banco Davivienda": "https://web.facebook.com/BancoDavivienda",
     "Bancolombia": "https://web.facebook.com/Bancolombia",
     "Banco de Bogotá": "https://web.facebook.com/BancodeBogota",
@@ -259,7 +260,7 @@ HTML = r"""<!doctype html>
     }
     .topbar {
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: 1fr auto auto auto;
       gap: 12px;
       align-items: center;
       max-width: 1440px;
@@ -572,6 +573,68 @@ HTML = r"""<!doctype html>
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
+    .platform-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      padding: 14px;
+    }
+    .platform-card {
+      display: grid;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+      min-width: 0;
+    }
+    .platform-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .platform-name {
+      font-weight: 800;
+      color: #17202a;
+      font-size: 16px;
+    }
+    .platform-rank {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .platform-count {
+      font-size: 30px;
+      line-height: 1;
+      font-weight: 800;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+    .platform-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      color: #263445;
+      font-size: 12px;
+    }
+    .platform-stat {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+    .platform-stat strong {
+      font-size: 15px;
+      color: #17202a;
+      font-variant-numeric: tabular-nums;
+    }
+    .platform-note {
+      color: var(--muted);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .tabs {
       display: flex;
       gap: 6px;
@@ -594,11 +657,15 @@ HTML = r"""<!doctype html>
       align-items: center;
     }
     .table-wrap {
-      max-height: 520px;
+      max-height: 720px;
       overflow: auto;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
     }
     table {
       width: 100%;
+      min-width: 980px;
       border-collapse: collapse;
       background: #fff;
     }
@@ -634,17 +701,126 @@ HTML = r"""<!doctype html>
       gap: 12px;
     }
     .preview {
-      display: grid;
+      display: none;
       gap: 10px;
       align-content: start;
       padding: 14px;
-      min-height: 260px;
-    }
-    .preview img {
-      max-width: 100%;
+      min-height: 220px;
+      max-height: none;
+      overflow: auto;
       border: 1px solid var(--line);
       border-radius: 6px;
       background: #fff;
+    }
+    .table-section.has-preview .preview {
+      display: grid;
+    }
+    .preview img {
+      display: block;
+      width: auto;
+      max-width: 100%;
+      max-height: 76vh;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      margin: 0 auto;
+    }
+    .preview-title {
+      display: grid;
+      gap: 3px;
+    }
+    .preview-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .preview-actions a {
+      display: inline-flex;
+      align-items: center;
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 650;
+      background: #fff;
+    }
+    .preview-text {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: #263445;
+      max-height: 220px;
+      overflow: auto;
+    }
+    .action-col {
+      width: 120px;
+      min-width: 120px;
+      white-space: nowrap;
+    }
+    .preview-btn {
+      height: 30px;
+      padding: 0 10px;
+      font-size: 12px;
+    }
+    .image-modal.hidden {
+      display: none;
+    }
+    .image-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      background: rgba(10, 18, 28, 0.82);
+      padding: 18px;
+    }
+    .image-modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+      padding: 10px 12px;
+      background: #fff;
+      border-radius: 8px 8px 0 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .image-modal-title {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+    }
+    .image-modal-title strong,
+    .image-modal-title span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .image-modal-body {
+      display: grid;
+      place-items: center;
+      min-height: 0;
+      overflow: auto;
+      background: #fff;
+      border-radius: 0 0 8px 8px;
+      padding: 14px;
+    }
+    .image-modal-body img {
+      display: block;
+      max-width: 100%;
+      max-height: calc(100vh - 130px);
+      object-fit: contain;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+    }
+    .table-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
     }
     .muted { color: var(--muted); }
     .links {
@@ -823,6 +999,9 @@ HTML = r"""<!doctype html>
       .config-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .bank-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .split { grid-template-columns: 1fr; }
+      .table-layout { grid-template-columns: 1fr; }
+      .preview { position: static; max-height: none; }
+      .platform-cards { grid-template-columns: 1fr; }
       .modality-dashboard { grid-template-columns: 1fr; }
       .bar-row { grid-template-columns: 130px 1fr 44px; }
     }
@@ -854,6 +1033,12 @@ HTML = r"""<!doctype html>
           <div class="brand-subtitle">LinkedIn de Investigación de Denuncias y Alertas</div>
         </div>
       </div>
+      <select id="executionPlatformFilter" aria-label="Filtrar ejecuciones por red">
+        <option value="all">Todas las redes</option>
+        <option value="linkedin">LinkedIn</option>
+        <option value="instagram">Instagram</option>
+        <option value="facebook">Facebook</option>
+      </select>
       <select id="executionSelect" aria-label="Ejecucion"></select>
       <button id="refreshBtn">Actualizar</button>
     </div>
@@ -955,6 +1140,17 @@ HTML = r"""<!doctype html>
 
     <section class="section split">
       <div class="panel">
+        <div class="section-head"><h2 id="platformCardsTitle">Resultados por red</h2></div>
+        <div class="platform-cards" id="platformCards"></div>
+      </div>
+      <div class="panel">
+        <div class="section-head"><h2 id="platformBarsTitle">Denuncias por red</h2></div>
+        <div class="bars" id="platformBars"></div>
+      </div>
+    </section>
+
+    <section class="section split">
+      <div class="panel">
         <div class="section-head"><h2 id="countChartTitle">Denuncias directas por banco</h2></div>
         <div class="bars" id="countBars"></div>
       </div>
@@ -980,7 +1176,7 @@ HTML = r"""<!doctype html>
       <div class="bars" id="painBars"></div>
     </section>
 
-    <section class="section panel">
+    <section class="section panel table-section" id="tableSection">
       <div class="section-head">
         <div class="tabs" id="tabs"></div>
         <div class="table-tools">
@@ -988,7 +1184,7 @@ HTML = r"""<!doctype html>
           <button class="secondary" id="clearFilter">Limpiar</button>
         </div>
       </div>
-      <div class="split">
+      <div class="table-layout">
         <div class="table-wrap"><table id="dataTable"></table></div>
         <aside class="preview" id="preview">
           <strong>Vista de captura</strong>
@@ -997,13 +1193,26 @@ HTML = r"""<!doctype html>
       </div>
     </section>
   </main>
+  <div class="image-modal hidden" id="imageModal" role="dialog" aria-modal="true">
+    <div class="image-modal-head">
+      <div class="image-modal-title">
+        <strong id="imageModalTitle">Captura</strong>
+        <span class="muted" id="imageModalSubtitle"></span>
+      </div>
+      <button class="secondary" id="closeImageModal" type="button">Cerrar</button>
+    </div>
+    <div class="image-modal-body" id="imageModalBody"></div>
+  </div>
 
   <script>
     const state = {
       execution: "",
+      executions: [],
+      executionPlatformFilter: "all",
       table: "publicaciones",
       rows: [],
       summary: null,
+      platformSummary: null,
       runRunning: false,
       runPoll: null
     };
@@ -1015,6 +1224,13 @@ HTML = r"""<!doctype html>
       comparativo: "Comparativo",
       tiempos: "Tiempos"
     };
+
+    const hiddenEvidenceColumns = new Set([
+      "imagen_publicacion",
+      "archivo_imagen",
+      "imagen_serial",
+      "serial_por_banco"
+    ]);
 
     const fileLabels = {
       publicaciones_linkedin: "Publicaciones CSV",
@@ -1033,6 +1249,13 @@ HTML = r"""<!doctype html>
       stopped: "Detenido",
       finished: "Finalizado",
       error: "Error"
+    };
+
+    const platformLabels = {
+      linkedin: "LinkedIn",
+      instagram: "Instagram",
+      facebook: "Facebook",
+      desconocida: "Sin red"
     };
 
     const painLabels = {
@@ -1196,6 +1419,21 @@ HTML = r"""<!doctype html>
       return `${url}${separator}banks=${bancosFiltroQuery()}`;
     }
 
+    function globalPlatformFilter() {
+      return state.executionPlatformFilter || "all";
+    }
+
+    function withGlobalDashboardFilters(url) {
+      const separator = url.includes("?") ? "&" : "?";
+      const params = [
+        `platform=${encodeURIComponent(globalPlatformFilter())}`
+      ];
+      if (state.execution) {
+        params.push(`exec=${encodeURIComponent(state.execution)}`);
+      }
+      return withBankFilter(`${url}${separator}${params.join("&")}`);
+    }
+
     async function refreshDashboardForBankFilter() {
       if (!state.execution) return;
       await loadDashboard();
@@ -1219,6 +1457,42 @@ HTML = r"""<!doctype html>
       ].join("");
     }
 
+    function renderPlatformSummary(rows) {
+      const ordered = rows || [];
+      const cards = ordered.map((row, index) => {
+        const label = row.plataforma_label || platformLabels[row.plataforma] || row.plataforma || "Sin red";
+        const publicaciones = number(row.publicaciones);
+        const descartadas = number(row.descartadas);
+        const ejecuciones = number(row.ejecuciones);
+        const bancos = number(row.bancos_con_resultados);
+        const ultima = row.ultima_ejecucion || "Sin ejecución";
+        const rank = ejecuciones ? `${ejecuciones} ejec.` : "Sin datos";
+        return `<div class="platform-card">
+          <div class="platform-card-head">
+            <div class="platform-name">${escapeHtml(label)}</div>
+            <div class="platform-rank">${rank}</div>
+          </div>
+          <div class="platform-count">${publicaciones}</div>
+          <div class="platform-stats">
+            <div class="platform-stat"><span>Descartadas</span><strong>${descartadas}</strong></div>
+            <div class="platform-stat"><span>Ejecuciones</span><strong>${ejecuciones}</strong></div>
+            <div class="platform-stat"><span>Bancos</span><strong>${bancos}</strong></div>
+          </div>
+          <div class="platform-note" title="${escapeHtml(ultima)}">${escapeHtml(ultima)}</div>
+        </div>`;
+      }).join("");
+
+      document.getElementById("platformCards").innerHTML = cards || `<div class="muted">Sin datos por red.</div>`;
+      renderBars(
+        "platformBars",
+        ordered,
+        "plataforma_label",
+        "publicaciones",
+        value => `${value}`,
+        ""
+      );
+    }
+
     function summaryDateRange() {
       const s = state.summary || {};
       const rows = [
@@ -1230,15 +1504,24 @@ HTML = r"""<!doctype html>
       return row ? row.rango_fecha : "";
     }
 
-    function titleWithRange(title) {
-      const range = summaryDateRange();
-      return range ? `${title} | ${range}` : title;
+    function selectedRangeLabel() {
+      const metadata = (state.summary && state.summary.metadata) || {};
+      return metadata.rango_fecha || [metadata.fecha_inicio, metadata.fecha_fin].filter(Boolean).join(" a ") || summaryDateRange();
+    }
+
+    function titleWithGlobalFilters(title) {
+      const platform = globalPlatformFilter();
+      const platformLabel = platform === "all" ? "Todas las redes" : platformLabels[platform] || platform;
+      const parts = [selectedRangeLabel(), platformLabel].filter(Boolean);
+      return parts.length ? `${title} | ${parts.join(" | ")}` : title;
     }
 
     function renderChartTitles() {
-      document.getElementById("countChartTitle").textContent = titleWithRange("Denuncias directas por banco");
-      document.getElementById("timeChartTitle").textContent = titleWithRange("Tiempo por banco");
-      document.getElementById("modalityChartTitle").textContent = titleWithRange("Modalidad reportada");
+      document.getElementById("platformCardsTitle").textContent = titleWithGlobalFilters("Resultados por red");
+      document.getElementById("platformBarsTitle").textContent = titleWithGlobalFilters("Denuncias por red");
+      document.getElementById("countChartTitle").textContent = titleWithGlobalFilters("Denuncias directas por banco");
+      document.getElementById("timeChartTitle").textContent = titleWithGlobalFilters("Tiempo por banco");
+      document.getElementById("modalityChartTitle").textContent = titleWithGlobalFilters("Modalidad reportada");
     }
 
     async function loadConfig() {
@@ -1426,6 +1709,19 @@ HTML = r"""<!doctype html>
       );
     }
 
+    async function loadBankChartSummary() {
+      const data = await getJson(withGlobalDashboardFilters("/api/platform-bank-count"));
+      const rows = data.rows || [];
+      renderBankBars(rows);
+      renderChartTitles();
+    }
+
+    async function loadTimeSummary() {
+      const data = await getJson(withGlobalDashboardFilters("/api/platform-time"));
+      renderBars("timeBars", data.rows || [], "banco", "duracion_segundos", formatDuration);
+      renderChartTitles();
+    }
+
     function formatDuration(seconds) {
       if (seconds >= 60) return `${(seconds / 60).toFixed(1)} min`;
       return `${seconds.toFixed(0)} s`;
@@ -1531,6 +1827,14 @@ HTML = r"""<!doctype html>
       document.getElementById("painBars").innerHTML = html || `<div class="muted">Sin datos.</div>`;
     }
 
+    async function loadModalitySummary() {
+      const data = await getJson(withGlobalDashboardFilters("/api/platform-modality"));
+      const rows = data.rows || [];
+      renderModalityDonut(rows);
+      renderPainBars(rows);
+      renderChartTitles();
+    }
+
     function renderTabs() {
       const tabs = Object.keys(tableLabels).map(key => {
         const active = key === state.table ? " active" : "";
@@ -1547,12 +1851,40 @@ HTML = r"""<!doctype html>
     }
 
     function cellClass(key) {
-      return ["texto", "motivo_relevancia", "terminos_contexto", "terminos_exclusion"].includes(key)
+      return [
+        "texto",
+        "motivo_relevancia",
+        "terminos_contexto",
+        "terminos_exclusion",
+        "url_publicacion",
+        "publicacion_url",
+        "busqueda",
+        "perfil_url"
+      ].includes(key)
         ? "long"
         : "";
     }
 
+    function visibleHeaders(row) {
+      const headers = Object.keys(row);
+      if (!["publicaciones", "descartadas"].includes(state.table)) return headers;
+      return headers.filter(header => !hiddenEvidenceColumns.has(header));
+    }
+
+    function tableHasPreview() {
+      return ["publicaciones", "descartadas"].includes(state.table);
+    }
+
+    function updateTableLayoutMode() {
+      document.getElementById("tableSection").classList.toggle("has-preview", tableHasPreview());
+    }
+
     function resetPreview() {
+      updateTableLayoutMode();
+      if (!tableHasPreview()) {
+        document.getElementById("preview").innerHTML = "";
+        return;
+      }
       document.getElementById("preview").innerHTML = `
         <strong>Vista de captura</strong>
         <div class="muted">Selecciona una fila de publicaciones o descartadas.</div>
@@ -1567,19 +1899,32 @@ HTML = r"""<!doctype html>
         : state.rows;
       const table = document.getElementById("dataTable");
       if (!rows.length) {
-        table.innerHTML = `<tbody><tr><td class="muted">Sin filas para mostrar.</td></tr></tbody>`;
+        table.innerHTML = `<tbody><tr><td class="muted">${emptyTableMessage()}</td></tr></tbody>`;
         return;
       }
-      const headers = Object.keys(rows[0]);
-      const thead = `<thead><tr>${headers.map(h => `<th>${columnLabels[h] || h}</th>`).join("")}</tr></thead>`;
+      const headers = visibleHeaders(rows[0]);
+      const actionHead = tableHasPreview() ? `<th class="action-col">Captura</th>` : "";
+      const thead = `<thead><tr>${actionHead}${headers.map(h => `<th>${columnLabels[h] || h}</th>`).join("")}</tr></thead>`;
       const tbody = rows.map((row, index) => {
-        const cls = ["publicaciones", "descartadas"].includes(state.table) ? " class=\"clickable\"" : "";
-        const cells = headers.map(h => `<td class="${cellClass(h)}">${escapeHtml(row[h] || "")}</td>`).join("");
-        return `<tr${cls} data-index="${index}">${cells}</tr>`;
+        const cls = tableHasPreview() ? " class=\"clickable\"" : "";
+        const actionCell = tableHasPreview()
+          ? `<td class="action-col"><button class="secondary preview-btn" data-index="${index}" type="button">Ver captura</button></td>`
+          : "";
+        const cells = headers.map(h => `<td class="${cellClass(h)}">${escapeHtml(cellValue(row[h]))}</td>`).join("");
+        return `<tr${cls} data-index="${index}">${actionCell}${cells}</tr>`;
       }).join("");
       table.innerHTML = `${thead}<tbody>${tbody}</tbody>`;
       table.querySelectorAll("tr.clickable").forEach(tr => {
-        tr.addEventListener("click", () => showPreview(rows[Number(tr.dataset.index)]));
+        tr.addEventListener("click", event => {
+          if (event.target.closest("button")) return;
+          showPreview(rows[Number(tr.dataset.index)]);
+        });
+      });
+      table.querySelectorAll(".preview-btn").forEach(button => {
+        button.addEventListener("click", event => {
+          event.stopPropagation();
+          showPreview(rows[Number(button.dataset.index)]);
+        });
       });
     }
 
@@ -1591,41 +1936,156 @@ HTML = r"""<!doctype html>
         .replaceAll('"', "&quot;");
     }
 
+    function cellValue(value) {
+      return value === null || value === undefined ? "" : value;
+    }
+
+    function emptyTableMessage() {
+      const metadata = (state.summary && state.summary.metadata) || {};
+      if (metadata.tiene_archivos_resultado === false) {
+        return "Esta ejecución no tiene archivos de resultado. Selecciona una ejecución finalizada.";
+      }
+      return "Sin filas para mostrar.";
+    }
+
     function showPreview(row) {
       const preview = document.getElementById("preview");
-      const path = row.imagen_publicacion || "";
+      const path = row.imagen_publicacion || row.archivo_imagen || "";
+      const imageUrl = path
+        ? `/api/image?exec=${encodeURIComponent(state.execution)}&path=${encodeURIComponent(path)}`
+        : "";
       const image = path
-        ? `<img src="/api/image?exec=${encodeURIComponent(state.execution)}&path=${encodeURIComponent(path)}" alt="Captura">`
+        ? `<a href="${imageUrl}" target="_blank" rel="noopener"><img src="${imageUrl}" alt="Captura" onerror="this.replaceWith(document.createTextNode('No se pudo cargar la captura.'))"></a>
+          <div class="preview-actions"><a href="${imageUrl}" target="_blank" rel="noopener">Abrir captura</a></div>`
         : `<div class="muted">Esta fila no tiene imagen asociada.</div>`;
+      const text = row.texto || row.comentarios_denuncia || row.comentarios_muestra || "";
       preview.innerHTML = `
-        <strong>${escapeHtml(row.banco || "Publicacion")}</strong>
-        <div class="muted">${escapeHtml(row.autor || "")}</div>
+        <div class="preview-title">
+          <strong>${escapeHtml(row.banco || "Publicacion")}</strong>
+          <div class="muted">${escapeHtml(row.autor || row.url || "")}</div>
+        </div>
         ${image}
-        <div>${escapeHtml((row.texto || "").slice(0, 900))}</div>
+        <div class="preview-text">${escapeHtml(text.slice(0, 1400))}</div>
       `;
+      openImageModal(row, imageUrl);
+    }
+
+    function openImageModal(row, imageUrl) {
+      const modal = document.getElementById("imageModal");
+      const title = document.getElementById("imageModalTitle");
+      const subtitle = document.getElementById("imageModalSubtitle");
+      const body = document.getElementById("imageModalBody");
+      const text = row.texto || row.comentarios_denuncia || row.comentarios_muestra || "";
+
+      title.textContent = row.banco || "Captura";
+      subtitle.textContent = [row.autor, row.fecha_visible, row.archivo_imagen].filter(Boolean).join(" | ");
+
+      if (!imageUrl) {
+        body.innerHTML = `<div class="muted">Esta fila no tiene imagen asociada.</div>`;
+      } else {
+        body.innerHTML = `
+          <div>
+            <img src="${imageUrl}" alt="Captura de evidencia" id="modalEvidenceImage">
+            <div class="preview-actions" style="margin-top:10px">
+              <a href="${imageUrl}" target="_blank" rel="noopener">Abrir captura en pestaña</a>
+            </div>
+            <div class="preview-text" style="margin-top:10px">${escapeHtml(text.slice(0, 900))}</div>
+          </div>
+        `;
+        document.getElementById("modalEvidenceImage").addEventListener("error", () => {
+          body.innerHTML = `<div class="muted">No se pudo cargar la captura desde el archivo asociado.</div>`;
+        });
+      }
+
+      modal.classList.remove("hidden");
+    }
+
+    function closeImageModal() {
+      document.getElementById("imageModal").classList.add("hidden");
+      document.getElementById("imageModalBody").innerHTML = "";
+    }
+
+    function filteredExecutions() {
+      const byPlatform = state.executionPlatformFilter === "all"
+        ? state.executions
+        : state.executions.filter(item => item.plataforma === state.executionPlatformFilter);
+      const withResults = byPlatform.filter(item => item.tiene_archivos_resultado);
+      return withResults.length ? withResults : byPlatform;
+    }
+
+    function executionLabel(item) {
+      const platform = item.plataforma_label || platformLabels[item.plataforma] || item.plataforma || "Sin red";
+      const range = item.rango_fecha || [item.fecha_inicio, item.fecha_fin].filter(Boolean).join(" a ");
+      const totals = [];
+      if (!item.tiene_archivos_resultado) {
+        totals.push("sin archivos de resultado");
+      } else if (Number.isFinite(Number(item.publicaciones))) {
+        totals.push(`${Number(item.publicaciones)} publicaciones`);
+      }
+      if (item.tiene_archivos_resultado && Number.isFinite(Number(item.descartadas))) {
+        totals.push(`${Number(item.descartadas)} descartadas`);
+      }
+      return [platform, item.name, range, totals.join(" / ")].filter(Boolean).join(" | ");
+    }
+
+    async function renderExecutionOptions() {
+      const select = document.getElementById("executionSelect");
+      const previous = state.execution;
+      const executions = filteredExecutions();
+      select.innerHTML = executions.map(item => {
+        return `<option value="${item.name}">${escapeHtml(executionLabel(item))}</option>`;
+      }).join("");
+
+      if (!executions.length) {
+        state.execution = "";
+        state.summary = null;
+        renderMetrics();
+        renderFileLinks();
+        renderChartTitles();
+        renderPlatformSummary([]);
+        renderBankBars([]);
+        renderBars("timeBars", [], "banco", "duracion_segundos", formatDuration);
+        renderModalityDonut([]);
+        renderPainBars([]);
+        state.rows = [];
+        renderTable();
+        status("No hay ejecuciones para el filtro seleccionado.");
+        return;
+      }
+
+      const exists = executions.some(item => item.name === previous);
+      const firstWithResults = executions.find(item => item.tiene_archivos_resultado);
+      state.execution = exists ? previous : (firstWithResults || executions[0]).name;
+      select.value = state.execution;
+      await loadDashboard();
     }
 
     async function loadExecutions() {
       const data = await getJson("/api/executions");
-      const select = document.getElementById("executionSelect");
-      const previous = state.execution;
-      select.innerHTML = data.executions.map(item => {
-        return `<option value="${item.name}">${item.name}</option>`;
-      }).join("");
-      if (!data.executions.length) {
+      state.executions = data.executions || [];
+      if (!state.executions.length) {
         state.execution = "";
         state.summary = null;
+        renderMetrics();
+        renderFileLinks();
+        renderChartTitles();
+        renderPlatformSummary([]);
+        renderBankBars([]);
+        renderBars("timeBars", [], "banco", "duracion_segundos", formatDuration);
+        renderModalityDonut([]);
+        renderPainBars([]);
+        state.rows = [];
+        renderTable();
         status("No hay ejecuciones en resultados/.");
         return;
       }
-      const exists = data.executions.some(item => item.name === previous);
-      state.execution = exists ? previous : data.executions[0].name;
-      select.value = state.execution;
-      select.onchange = () => {
-        state.execution = select.value;
-        loadDashboard();
-      };
-      await loadDashboard();
+      await renderExecutionOptions();
+    }
+
+    async function loadPlatformSummary() {
+      const data = await getJson(withGlobalDashboardFilters("/api/platform-summary"));
+      state.platformSummary = data.rows || [];
+      renderPlatformSummary(state.platformSummary);
     }
 
     async function loadDashboard() {
@@ -1635,13 +2095,15 @@ HTML = r"""<!doctype html>
       renderMetrics();
       renderChartTitles();
       renderFileLinks();
-      renderBankBars(state.summary.conteo || []);
-      renderBars("timeBars", state.summary.tiempos_banco || [], "banco", "duracion_segundos", formatDuration);
-      renderModalityDonut(state.summary.dolor_cliente || []);
-      renderPainBars(state.summary.dolor_cliente || []);
+      await loadPlatformSummary();
+      await loadBankChartSummary();
+      await loadTimeSummary();
+      await loadModalitySummary();
       renderTabs();
       await loadTable();
-      status(`Ejecucion cargada: ${state.execution}`);
+      const metadata = state.summary.metadata || {};
+      const platform = metadata.plataforma_label || platformLabels[metadata.plataforma] || "";
+      status(`Ejecucion cargada: ${[platform, state.execution].filter(Boolean).join(" | ")}`);
     }
 
     async function loadTable() {
@@ -1652,10 +2114,25 @@ HTML = r"""<!doctype html>
     }
 
     document.getElementById("refreshBtn").addEventListener("click", loadDashboard);
+    document.getElementById("executionSelect").addEventListener("change", event => {
+      state.execution = event.target.value;
+      loadDashboard().catch(error => status(`Error: ${error.message}`));
+    });
+    document.getElementById("executionPlatformFilter").addEventListener("change", event => {
+      state.executionPlatformFilter = event.target.value;
+      renderExecutionOptions().catch(error => status(`Error: ${error.message}`));
+    });
     document.getElementById("filterInput").addEventListener("input", renderTable);
     document.getElementById("clearFilter").addEventListener("click", () => {
       document.getElementById("filterInput").value = "";
       renderTable();
+    });
+    document.getElementById("closeImageModal").addEventListener("click", closeImageModal);
+    document.getElementById("imageModal").addEventListener("click", event => {
+      if (event.target.id === "imageModal") closeImageModal();
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") closeImageModal();
     });
 
     document.getElementById("saveConfigBtn").addEventListener("click", () => {
@@ -2110,6 +2587,114 @@ def ejecuciones_disponibles():
     return ejecuciones
 
 
+def plataforma_label(plataforma):
+    etiquetas = {
+        "linkedin": "LinkedIn",
+        "instagram": "Instagram",
+        "facebook": "Facebook",
+    }
+
+    return etiquetas.get(plataforma, "Sin red")
+
+
+def inferir_plataforma_ejecucion(ejecucion):
+    archivos = [
+        ejecucion / "tiempos_ejecucion.csv",
+        ejecucion / "publicaciones_linkedin.csv",
+        ejecucion / "publicaciones_descartadas.csv",
+    ]
+
+    muestras = []
+    for archivo in archivos:
+        for fila in leer_csv(archivo)[:80]:
+            muestras.append(" ".join(str(valor) for valor in fila.values()))
+
+    texto = " ".join(muestras).lower()
+
+    if "facebook.com" in texto or "web.facebook.com" in texto:
+        return "facebook"
+    if "instagram.com" in texto:
+        return "instagram"
+    if "linkedin.com" in texto:
+        return "linkedin"
+
+    return "linkedin"
+
+
+def rango_desde_filas(ejecucion):
+    for archivo in (
+        ejecucion / "publicaciones_linkedin.csv",
+        ejecucion / "publicaciones_descartadas.csv",
+        ejecucion / "conteo_por_banco.csv",
+        ejecucion / "comparativo_banco_popular.csv",
+    ):
+        for fila in leer_csv(archivo)[:20]:
+            if fila.get("rango_fecha_inicio") or fila.get("rango_fecha_fin"):
+                return {
+                    "fecha_inicio": fila.get("rango_fecha_inicio", ""),
+                    "fecha_fin": fila.get("rango_fecha_fin", ""),
+                    "rango_fecha": fila.get("rango_fecha", ""),
+                }
+            if fila.get("rango_fecha"):
+                return {
+                    "fecha_inicio": "",
+                    "fecha_fin": "",
+                    "rango_fecha": fila.get("rango_fecha", ""),
+                }
+
+    return {"fecha_inicio": "", "fecha_fin": "", "rango_fecha": ""}
+
+
+def leer_metadata_ejecucion(ejecucion):
+    ruta = ejecucion / "metadata.json"
+    metadata = {}
+
+    if ruta.exists():
+        try:
+            with ruta.open("r", encoding="utf-8") as archivo:
+                metadata = json.load(archivo)
+        except (OSError, json.JSONDecodeError):
+            metadata = {}
+
+    rango = rango_desde_filas(ejecucion)
+    plataforma = metadata.get("plataforma") or inferir_plataforma_ejecucion(ejecucion)
+    archivos_resultado = {
+        "publicaciones": (ejecucion / "publicaciones_linkedin.csv").exists(),
+        "descartadas": (ejecucion / "publicaciones_descartadas.csv").exists(),
+        "conteo": (ejecucion / "conteo_por_banco.csv").exists(),
+        "comparativo": (ejecucion / "comparativo_banco_popular.csv").exists(),
+        "tiempos": (ejecucion / "tiempos_ejecucion.csv").exists(),
+    }
+    publicaciones = leer_csv(ejecucion / "publicaciones_linkedin.csv")
+    descartadas = leer_csv(ejecucion / "publicaciones_descartadas.csv")
+    bancos = metadata.get("bancos_seleccionados") or [
+        fila.get("banco")
+        for fila in leer_csv(ejecucion / "conteo_por_banco.csv")
+        if fila.get("banco")
+    ]
+
+    metadata.setdefault("version", 0)
+    metadata["name"] = ejecucion.name
+    metadata["mtime"] = ejecucion.stat().st_mtime
+    metadata["plataforma"] = plataforma
+    metadata["plataforma_label"] = metadata.get(
+        "plataforma_label",
+        plataforma_label(plataforma),
+    )
+    metadata["fecha_inicio"] = metadata.get("fecha_inicio") or rango["fecha_inicio"]
+    metadata["fecha_fin"] = metadata.get("fecha_fin") or rango["fecha_fin"]
+    metadata["rango_fecha"] = metadata.get("rango_fecha") or rango["rango_fecha"]
+    metadata["bancos_seleccionados"] = bancos
+    metadata["bancos_total"] = len(bancos)
+    metadata["archivos_resultado"] = archivos_resultado
+    metadata["tiene_archivos_resultado"] = any(archivos_resultado.values())
+    metadata["publicaciones_guardadas"] = len(publicaciones)
+    metadata["publicaciones"] = len(filtrar_publicaciones_validas(publicaciones, metadata))
+    metadata["descartadas"] = metadata.get("descartadas", len(descartadas))
+
+    return metadata
+
+
 def obtener_ejecucion(nombre):
     if not nombre:
         ejecuciones = ejecuciones_disponibles()
@@ -2169,6 +2754,14 @@ def bancos_desde_parametros(params):
     return bancos
 
 
+def metadata_contexto_desde_parametros(params):
+    nombre = params.get("exec", [""])[0]
+    if not nombre:
+        return None
+
+    return leer_metadata_ejecucion(obtener_ejecucion(nombre))
+
+
 def filtrar_filas_por_bancos(filas, bancos):
     if bancos is None:
         return filas
@@ -2195,6 +2788,160 @@ def filtrar_tabla_por_bancos(tabla, filas, bancos):
         ]
 
     return filtrar_filas_por_bancos(filas, bancos)
+
+
+def normalizar_plataforma_resumen(plataforma):
+    plataforma = (plataforma or "all").strip().lower()
+    if plataforma == "current":
+        plataforma = "all"
+
+    if plataforma != "all" and plataforma not in PLATAFORMAS_RESUMEN:
+        raise ValueError("Plataforma no permitida.")
+
+    return plataforma
+
+
+def plataforma_pasa_filtro(plataforma_ejecucion, plataforma_filtro):
+    if plataforma_filtro == "all":
+        return True
+    return plataforma_ejecucion == plataforma_filtro
+
+
+def metadata_coincide_rango(metadata, contexto):
+    if not contexto:
+        return True
+
+    inicio = contexto.get("fecha_inicio") or ""
+    fin = contexto.get("fecha_fin") or ""
+    if inicio or fin:
+        return (
+            (metadata.get("fecha_inicio") or "") == inicio
+            and (metadata.get("fecha_fin") or "") == fin
+        )
+
+    rango = contexto.get("rango_fecha") or ""
+    if rango:
+        return (metadata.get("rango_fecha") or "") == rango
+
+    return True
+
+
+def fecha_iso_a_date(valor):
+    if not valor:
+        return None
+
+    try:
+        return date.fromisoformat(str(valor)[:10])
+    except ValueError:
+        return None
+
+
+def fila_publicacion_en_rango(fila, metadata):
+    if not metadata.get("filtrar_por_fecha", True):
+        return True
+
+    estado = (fila.get("fecha_en_rango") or "").strip().lower()
+    if estado in {"no", "sin_fecha"}:
+        return False
+
+    fecha = fecha_iso_a_date(fila.get("fecha_publicacion_estimada"))
+    inicio = fecha_iso_a_date(
+        fila.get("rango_fecha_inicio") or metadata.get("fecha_inicio")
+    )
+    fin = fecha_iso_a_date(fila.get("rango_fecha_fin") or metadata.get("fecha_fin"))
+
+    if fecha and inicio and fin:
+        return inicio <= fecha <= fin
+
+    return estado == "si" or not estado
+
+
+def filtrar_publicaciones_validas(publicaciones, metadata):
+    return [
+        fila
+        for fila in publicaciones
+        if fila_publicacion_en_rango(fila, metadata)
+    ]
+
+
+def recalcular_conteo_publicaciones(publicaciones, conteo_base, metadata):
+    rango = metadata.get("rango_fecha", "")
+    bancos = [
+        fila.get("banco")
+        for fila in conteo_base
+        if fila.get("banco")
+    ]
+
+    if not bancos:
+        bancos = list(metadata.get("bancos_seleccionados") or [])
+
+    for fila in publicaciones:
+        banco = fila.get("banco")
+        if banco and banco not in bancos:
+            bancos.append(banco)
+
+    conteo = Counter(fila.get("banco") for fila in publicaciones if fila.get("banco"))
+
+    return [
+        {
+            "banco": banco,
+            "rango_fecha": rango,
+            "publicaciones": conteo.get(banco, 0),
+        }
+        for banco in bancos
+    ]
+
+
+def recalcular_comparativo_publicaciones(publicaciones, descartadas, conteo, metadata):
+    total_publicaciones = len(publicaciones)
+    denuncias_por_banco = {
+        fila.get("banco", ""): int(numero(fila.get("publicaciones")))
+        for fila in conteo
+    }
+    descartadas_por_banco = Counter(
+        fila.get("banco") for fila in descartadas if fila.get("banco")
+    )
+    interacciones_por_banco = Counter()
+
+    for fila in publicaciones:
+        banco = fila.get("banco")
+        if banco:
+            interacciones_por_banco[banco] += int(numero(fila.get("interacciones_total")))
+
+    banco_popular = "Banco Popular Colombia"
+    denuncias_popular = denuncias_por_banco.get(banco_popular, 0)
+    if total_publicaciones:
+        ranking = {
+            banco: indice + 1
+            for indice, banco in enumerate(
+                sorted(
+                    denuncias_por_banco,
+                    key=lambda banco: (-denuncias_por_banco[banco], banco),
+                )
+            )
+        }
+    else:
+        ranking = {}
+
+    return [
+        {
+            "banco": banco,
+            "grupo": "Banco Popular" if banco == banco_popular else "Otros bancos",
+            "rango_fecha": metadata.get("rango_fecha", ""),
+            "denuncias_directas": denuncias,
+            "denuncias_descartadas": descartadas_por_banco.get(banco, 0),
+            "participacion_total_porcentaje": round(
+                (denuncias / total_publicaciones) * 100,
+                2,
+            )
+            if total_publicaciones
+            else 0,
+            "diferencia_vs_banco_popular": denuncias - denuncias_popular,
+            "interacciones_total": interacciones_por_banco.get(banco, 0),
+            "ranking_denuncias": ranking.get(banco, ""),
+        }
+        for banco, denuncias in denuncias_por_banco.items()
+    ]
 
 
 def tiempos_por_banco(tiempos_busqueda):
@@ -2325,6 +3072,7 @@ def resumen_dolor_cliente(publicaciones):
 
 
 def resumen_ejecucion(ejecucion, bancos=None):
+    metadata = leer_metadata_ejecucion(ejecucion)
     publicaciones = leer_csv(ejecucion / "publicaciones_linkedin.csv")
     descartadas = leer_csv(ejecucion / "publicaciones_descartadas.csv")
     conteo = leer_csv(ejecucion / "conteo_por_banco.csv")
@@ -2339,6 +3087,14 @@ def resumen_ejecucion(ejecucion, bancos=None):
     conteo = filtrar_filas_por_bancos(conteo, bancos)
     comparativo = filtrar_filas_por_bancos(comparativo, bancos)
     tiempos_busqueda = filtrar_filas_por_bancos(tiempos_busqueda, bancos)
+    publicaciones = filtrar_publicaciones_validas(publicaciones, metadata)
+    conteo = recalcular_conteo_publicaciones(publicaciones, conteo, metadata)
+    comparativo = recalcular_comparativo_publicaciones(
+        publicaciones,
+        descartadas,
+        conteo,
+        metadata,
+    )
 
     bancos_con_resultados = sum(1 for fila in conteo if numero(fila.get("publicaciones")) > 0)
     duracion_total_segundos = round(
@@ -2356,6 +3112,7 @@ def resumen_ejecucion(ejecucion, bancos=None):
 
     return {
         "ejecucion": ejecucion.name,
+        "metadata": metadata,
         "publicaciones": len(publicaciones),
         "descartadas": len(descartadas),
         "conteo": conteo,
@@ -2371,24 +3128,254 @@ def resumen_ejecucion(ejecucion, bancos=None):
     }
 
 
+def resumen_por_plataforma(plataforma="all", bancos=None, contexto=None):
+    plataforma_filtro = normalizar_plataforma_resumen(plataforma)
+    plataformas_iniciales = (
+        PLATAFORMAS_RESUMEN
+        if plataforma_filtro == "all"
+        else [plataforma_filtro]
+    )
+    acumulados = {
+        plataforma: {
+            "plataforma": plataforma,
+            "plataforma_label": plataforma_label(plataforma),
+            "publicaciones": 0,
+            "descartadas": 0,
+            "ejecuciones": 0,
+            "bancos": set(),
+            "duracion_total_segundos": 0,
+            "ultima_ejecucion": "",
+            "ultima_mtime": 0,
+        }
+        for plataforma in plataformas_iniciales
+    }
+
+    for ejecucion in ejecuciones_disponibles():
+        metadata = leer_metadata_ejecucion(ejecucion)
+        plataforma = metadata.get("plataforma") or inferir_plataforma_ejecucion(ejecucion)
+        if not plataforma_pasa_filtro(plataforma, plataforma_filtro):
+            continue
+        if not metadata_coincide_rango(metadata, contexto):
+            continue
+
+        if plataforma not in acumulados:
+            acumulados[plataforma] = {
+                "plataforma": plataforma,
+                "plataforma_label": plataforma_label(plataforma),
+                "publicaciones": 0,
+                "descartadas": 0,
+                "ejecuciones": 0,
+                "bancos": set(),
+                "duracion_total_segundos": 0,
+                "ultima_ejecucion": "",
+                "ultima_mtime": 0,
+            }
+
+        publicaciones = filtrar_filas_por_bancos(
+            leer_csv(ejecucion / "publicaciones_linkedin.csv"),
+            bancos,
+        )
+        publicaciones = filtrar_publicaciones_validas(publicaciones, metadata)
+        descartadas = filtrar_filas_por_bancos(
+            leer_csv(ejecucion / "publicaciones_descartadas.csv"),
+            bancos,
+        )
+        tiempos = filtrar_filas_por_bancos(
+            [
+                fila
+                for fila in leer_csv(ejecucion / "tiempos_ejecucion.csv")
+                if fila.get("tipo_tiempo") == "busqueda"
+            ],
+            bancos,
+        )
+
+        acumulado = acumulados[plataforma]
+        acumulado["publicaciones"] += len(publicaciones)
+        acumulado["descartadas"] += len(descartadas)
+        acumulado["ejecuciones"] += 1
+        acumulado["duracion_total_segundos"] += sum(
+            numero(fila.get("duracion_segundos"))
+            for fila in tiempos
+        )
+
+        for fila in publicaciones:
+            banco = fila.get("banco")
+            if banco:
+                acumulado["bancos"].add(banco)
+
+        mtime = ejecucion.stat().st_mtime
+        if mtime > acumulado["ultima_mtime"]:
+            acumulado["ultima_mtime"] = mtime
+            acumulado["ultima_ejecucion"] = ejecucion.name
+
+    orden = [
+        *plataformas_iniciales,
+        *sorted(
+            plataforma
+            for plataforma in acumulados
+            if plataforma not in plataformas_iniciales
+        ),
+    ]
+    filas = []
+
+    for plataforma in orden:
+        acumulado = acumulados[plataforma]
+        duracion = round(acumulado["duracion_total_segundos"], 2)
+        filas.append(
+            {
+                "plataforma": plataforma,
+                "plataforma_label": acumulado["plataforma_label"],
+                "publicaciones": acumulado["publicaciones"],
+                "descartadas": acumulado["descartadas"],
+                "ejecuciones": acumulado["ejecuciones"],
+                "bancos_con_resultados": len(acumulado["bancos"]),
+                "duracion_total_segundos": duracion,
+                "duracion_total_minutos": round(duracion / 60, 2),
+                "ultima_ejecucion": acumulado["ultima_ejecucion"],
+            }
+        )
+
+    return filas
+
+
+def publicaciones_para_modalidad_plataforma(plataforma, bancos=None, contexto=None):
+    plataforma_filtro = normalizar_plataforma_resumen(plataforma)
+    publicaciones_agregadas = []
+
+    for ejecucion in ejecuciones_disponibles():
+        metadata = leer_metadata_ejecucion(ejecucion)
+        plataforma_ejecucion = (
+            metadata.get("plataforma")
+            or inferir_plataforma_ejecucion(ejecucion)
+        )
+
+        if not plataforma_pasa_filtro(plataforma_ejecucion, plataforma_filtro):
+            continue
+        if not metadata_coincide_rango(metadata, contexto):
+            continue
+
+        publicaciones = filtrar_filas_por_bancos(
+            leer_csv(ejecucion / "publicaciones_linkedin.csv"),
+            bancos,
+        )
+        publicaciones = filtrar_publicaciones_validas(publicaciones, metadata)
+
+        for fila in publicaciones:
+            fila = fila.copy()
+            fila.setdefault("plataforma", plataforma_ejecucion)
+            fila.setdefault("plataforma_label", plataforma_label(plataforma_ejecucion))
+            publicaciones_agregadas.append(fila)
+
+    return publicaciones_agregadas
+
+
+def resumen_bancos_plataforma(plataforma, bancos=None, contexto=None):
+    plataforma_filtro = normalizar_plataforma_resumen(plataforma)
+    publicaciones = publicaciones_para_modalidad_plataforma(
+        plataforma_filtro,
+        bancos,
+        contexto,
+    )
+    conteo = Counter(
+        fila.get("banco")
+        for fila in publicaciones
+        if fila.get("banco")
+    )
+
+    if bancos is None:
+        bancos_base = list(BANCOS_OBJETIVO)
+    else:
+        bancos_base = list(bancos)
+
+    for banco in conteo:
+        if banco not in bancos_base:
+            bancos_base.append(banco)
+
+    return [
+        {
+            "banco": banco,
+            "publicaciones": conteo.get(banco, 0),
+            "plataforma": plataforma_filtro,
+            "plataforma_label": (
+                "Todas las redes"
+                if plataforma_filtro == "all"
+                else plataforma_label(plataforma_filtro)
+            ),
+        }
+        for banco in bancos_base
+    ]
+
+
+def resumen_modalidad_plataforma(plataforma, bancos=None, contexto=None):
+    plataforma_filtro = normalizar_plataforma_resumen(plataforma)
+    return resumen_dolor_cliente(
+        publicaciones_para_modalidad_plataforma(plataforma_filtro, bancos, contexto)
+    )
+
+
+def resumen_tiempos_plataforma(plataforma, bancos=None, contexto=None):
+    plataforma_filtro = normalizar_plataforma_resumen(plataforma)
+    tiempos_agregados = []
+
+    for ejecucion in ejecuciones_disponibles():
+        metadata = leer_metadata_ejecucion(ejecucion)
+        plataforma_ejecucion = (
+            metadata.get("plataforma")
+            or inferir_plataforma_ejecucion(ejecucion)
+        )
+
+        if not plataforma_pasa_filtro(plataforma_ejecucion, plataforma_filtro):
+            continue
+        if not metadata_coincide_rango(metadata, contexto):
+            continue
+
+        tiempos = [
+            fila
+            for fila in leer_csv(ejecucion / "tiempos_ejecucion.csv")
+            if fila.get("tipo_tiempo") == "busqueda"
+        ]
+        tiempos = filtrar_filas_por_bancos(tiempos, bancos)
+
+        for fila in tiempos:
+            fila = fila.copy()
+            fila.setdefault("plataforma", plataforma_ejecucion)
+            fila.setdefault("plataforma_label", plataforma_label(plataforma_ejecucion))
+            tiempos_agregados.append(fila)
+
+    return tiempos_por_banco(tiempos_agregados)
+
+
 def ruta_imagen_segura(ejecucion, valor):
     if not valor:
         raise FileNotFoundError("Imagen no indicada.")
 
     ruta = Path(unquote(valor))
-    if not ruta.is_absolute():
-        ruta = BASE_DIR / ruta
-
-    ruta = ruta.resolve()
     ejecucion_resuelta = ejecucion.resolve()
+    candidatas = []
 
-    if ejecucion_resuelta not in ruta.parents:
-        raise FileNotFoundError("Imagen fuera de la ejecucion.")
+    if ruta.is_absolute():
+        candidatas.append(ruta.resolve())
+    else:
+        candidatas.extend([
+            (BASE_DIR / ruta).resolve(),
+            (ejecucion / ruta).resolve(),
+        ])
+        if len(ruta.parts) == 1:
+            capturas_dir = ejecucion / "capturas_publicaciones"
+            if capturas_dir.exists():
+                candidatas.extend(
+                    encontrada.resolve()
+                    for encontrada in capturas_dir.rglob(ruta.name)
+                    if encontrada.is_file()
+                )
 
-    if not ruta.exists() or not ruta.is_file():
-        raise FileNotFoundError("Imagen no encontrada.")
+    for candidata in candidatas:
+        if ejecucion_resuelta not in candidata.parents:
+            continue
+        if candidata.exists() and candidata.is_file():
+            return candidata
 
-    return ruta
+    raise FileNotFoundError("Imagen no encontrada.")
 
 
 class InterfazHandler(BaseHTTPRequestHandler):
@@ -2427,10 +3414,7 @@ class InterfazHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/api/executions":
             ejecuciones = [
-                {
-                    "name": ruta.name,
-                    "mtime": ruta.stat().st_mtime,
-                }
+                leer_metadata_ejecucion(ruta)
                 for ruta in ejecuciones_disponibles()
             ]
             respuesta_json(self, {"executions": ejecuciones})
@@ -2442,6 +3426,66 @@ class InterfazHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/api/run/status":
             respuesta_json(self, estado_ejecucion())
+            return
+
+        if parsed.path == "/api/platform-summary":
+            plataforma = params.get("platform", ["all"])[0]
+            respuesta_json(
+                self,
+                {
+                    "platform": plataforma,
+                    "rows": resumen_por_plataforma(
+                        plataforma,
+                        bancos_desde_parametros(params),
+                        metadata_contexto_desde_parametros(params),
+                    ),
+                },
+            )
+            return
+
+        if parsed.path == "/api/platform-modality":
+            plataforma = params.get("platform", ["all"])[0]
+            respuesta_json(
+                self,
+                {
+                    "platform": plataforma,
+                    "rows": resumen_modalidad_plataforma(
+                        plataforma,
+                        bancos_desde_parametros(params),
+                        metadata_contexto_desde_parametros(params),
+                    ),
+                },
+            )
+            return
+
+        if parsed.path == "/api/platform-bank-count":
+            plataforma = params.get("platform", ["all"])[0]
+            respuesta_json(
+                self,
+                {
+                    "platform": plataforma,
+                    "rows": resumen_bancos_plataforma(
+                        plataforma,
+                        bancos_desde_parametros(params),
+                        metadata_contexto_desde_parametros(params),
+                    ),
+                },
+            )
+            return
+
+        if parsed.path == "/api/platform-time":
+            plataforma = params.get("platform", ["all"])[0]
+            respuesta_json(
+                self,
+                {
+                    "platform": plataforma,
+                    "rows": resumen_tiempos_plataforma(
+                        plataforma,
+                        bancos_desde_parametros(params),
+                        metadata_contexto_desde_parametros(params),
+                    ),
+                },
+            )
             return
 
         if parsed.path == "/assets/logo":
@@ -2468,12 +3512,25 @@ class InterfazHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/api/table":
             tabla = params.get("table", ["publicaciones"])[0]
+            if tabla in {"conteo", "comparativo"}:
+                resumen = resumen_ejecucion(
+                    ejecucion,
+                    bancos_desde_parametros(params),
+                )
+                respuesta_json(self, {"rows": resumen[tabla]})
+                return
+
             ruta = archivo_en_ejecucion(ejecucion, tabla)
             filas = filtrar_tabla_por_bancos(
                 tabla,
                 leer_csv(ruta),
                 bancos_desde_parametros(params),
             )
+            if tabla == "publicaciones":
+                filas = filtrar_publicaciones_validas(
+                    filas,
+                    leer_metadata_ejecucion(ejecucion),
+                )
             respuesta_json(self, {"rows": filas})
             return
 

@@ -135,6 +135,7 @@ RUTA_COMPARATIVO_POPULAR = RUTA_RESULTADOS / "comparativo_banco_popular.csv"
 RUTA_TIEMPOS_EJECUCION = RUTA_RESULTADOS / "tiempos_ejecucion.csv"
 RUTA_REPORTE_EXCEL = RUTA_RESULTADOS / "reporte_bancos.xlsx"
 RUTA_CAPTURAS = RUTA_RESULTADOS / "capturas_publicaciones"
+RUTA_METADATA = RUTA_RESULTADOS / "metadata.json"
 RUTA_EJECUCION = RUTA_RESULTADOS
 RUTA_PERFIL_CHROMIUM = Path(__file__).with_name(".perfil_chromium_linkedin")
 TIMEOUT_NAVEGACION_LINKEDIN_MS = 90000
@@ -1812,6 +1813,7 @@ def preparar_rutas_ejecucion(configuracion):
     global RUTA_TIEMPOS_EJECUCION
     global RUTA_REPORTE_EXCEL
     global RUTA_CAPTURAS
+    global RUTA_METADATA
 
     fecha_ejecucion = datetime.now()
     fecha_archivo = formatear_fecha_ejecucion(fecha_ejecucion)
@@ -1835,13 +1837,91 @@ def preparar_rutas_ejecucion(configuracion):
     RUTA_TIEMPOS_EJECUCION = ruta_ejecucion / "tiempos_ejecucion.csv"
     RUTA_REPORTE_EXCEL = ruta_ejecucion / "reporte_bancos.xlsx"
     RUTA_CAPTURAS = ruta_ejecucion / "capturas_publicaciones"
+    RUTA_METADATA = ruta_ejecucion / "metadata.json"
 
     configuracion = configuracion.copy()
     configuracion["fecha_ejecucion"] = fecha_ejecucion
     configuracion["fecha_ejecucion_archivo"] = fecha_archivo
     configuracion["ruta_ejecucion"] = ruta_ejecucion
+    escribir_metadata_ejecucion(configuracion)
 
     return configuracion
+
+
+def plataforma_visible(plataforma):
+    etiquetas = {
+        "linkedin": "LinkedIn",
+        "instagram": "Instagram",
+        "facebook": "Facebook",
+    }
+
+    return etiquetas.get(plataforma, plataforma or "Desconocida")
+
+
+def valor_json_metadata(valor):
+    if isinstance(valor, (date, datetime)):
+        return valor.isoformat()
+    if isinstance(valor, Path):
+        return valor.name
+    if isinstance(valor, list):
+        return [valor_json_metadata(item) for item in valor]
+    if isinstance(valor, dict):
+        return {clave: valor_json_metadata(item) for clave, item in valor.items()}
+
+    return valor
+
+
+def metadata_desde_configuracion(configuracion):
+    plataforma = configuracion.get("plataforma", "linkedin")
+
+    return {
+        "version": 1,
+        "plataforma": plataforma,
+        "plataforma_label": plataforma_visible(plataforma),
+        "fecha_inicio": valor_json_metadata(configuracion.get("fecha_inicio")),
+        "fecha_fin": valor_json_metadata(configuracion.get("fecha_fin")),
+        "rango_fecha": formatear_rango_fecha(configuracion),
+        "fecha_ejecucion": valor_json_metadata(configuracion.get("fecha_ejecucion")),
+        "fecha_ejecucion_archivo": configuracion.get("fecha_ejecucion_archivo", ""),
+        "carpeta": Path(configuracion.get("ruta_ejecucion", RUTA_EJECUCION)).name,
+        "bancos_seleccionados": valor_json_metadata(
+            configuracion.get("bancos_seleccionados", [])
+        ),
+        "max_publicaciones_por_busqueda": configuracion.get(
+            "max_publicaciones_por_busqueda"
+        ),
+        "max_publicaciones_por_banco": configuracion.get(
+            "max_publicaciones_por_banco"
+        ),
+        "max_comentarios_por_publicacion": configuracion.get(
+            "max_comentarios_por_publicacion"
+        ),
+        "filtrar_por_fecha": bool(configuracion.get("filtrar_por_fecha", True)),
+        "filtrar_por_relevancia": bool(
+            configuracion.get("filtrar_por_relevancia", True)
+        ),
+        "guardar_descartadas": bool(configuracion.get("guardar_descartadas", True)),
+    }
+
+
+def escribir_metadata_ejecucion(configuracion, extras=None):
+    metadata = metadata_desde_configuracion(configuracion)
+
+    if RUTA_METADATA.exists():
+        try:
+            with RUTA_METADATA.open("r", encoding="utf-8") as archivo:
+                metadata_guardada = json.load(archivo)
+        except (OSError, json.JSONDecodeError):
+            metadata_guardada = {}
+        metadata_guardada.update(metadata)
+        metadata = metadata_guardada
+
+    if extras:
+        metadata.update(valor_json_metadata(extras))
+
+    with RUTA_METADATA.open("w", encoding="utf-8") as archivo:
+        json.dump(metadata, archivo, indent=2, ensure_ascii=False)
+        archivo.write("\n")
 
 
 def normalizar_nombre_archivo(texto):
@@ -3229,21 +3309,23 @@ def guardar_resultados(publicaciones, descartadas, configuracion, tiempos_ejecuc
     RUTA_EJECUCION.mkdir(parents=True, exist_ok=True)
     rango_fecha = formatear_rango_fecha(configuracion)
     bancos = configuracion.get("bancos_seleccionados", BANCOS_OBJETIVO)
+    guardar_descartadas = configuracion["guardar_descartadas"]
+    descartadas_reporte = descartadas if guardar_descartadas else []
 
     agregar_dolor_cliente_a_filas(publicaciones)
-    marcar_descartadas_sin_modalidad(descartadas)
+    marcar_descartadas_sin_modalidad(descartadas_reporte)
 
     campos_publicacion = campos_publicaciones()
     campos = campos_resultados()
     escribir_csv(RUTA_PUBLICACIONES, publicaciones, campos_publicacion)
 
-    if configuracion["guardar_descartadas"]:
-        escribir_csv(RUTA_DESCARTADAS, descartadas, campos)
+    if guardar_descartadas:
+        escribir_csv(RUTA_DESCARTADAS, descartadas_reporte, campos)
 
     conteo = contar_publicaciones_por_banco(publicaciones, bancos)
     filas_comparativo = guardar_comparativo_banco_popular(
         publicaciones,
-        descartadas,
+        descartadas_reporte,
         conteo,
         rango_fecha,
         bancos,
@@ -3268,10 +3350,22 @@ def guardar_resultados(publicaciones, descartadas, configuracion, tiempos_ejecuc
 
     crear_reporte_excel(
         publicaciones,
-        descartadas,
+        descartadas_reporte,
         filas_conteo,
         filas_comparativo,
         tiempos_ejecucion,
+    )
+    escribir_metadata_ejecucion(
+        configuracion,
+        {
+            "publicaciones": len(publicaciones),
+            "descartadas": len(descartadas_reporte),
+            "bancos_con_resultados": sum(1 for total in conteo.values() if total > 0),
+            "total_busquedas": sum(
+                1 for fila in tiempos_ejecucion if fila.get("tipo_tiempo") == "busqueda"
+            ),
+            "finalizada_en": datetime.now().isoformat(timespec="seconds"),
+        },
     )
 
     return conteo
