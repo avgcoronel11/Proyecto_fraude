@@ -212,6 +212,7 @@ TERMINOS_FRAUDE_CONCRETO = [
 
 
 def cargar_credenciales_red(usuario_clave, contrasena_clave):
+    """Carga credenciales de una red desde .env usando nombres de variable."""
     datos = proyecto.leer_archivo_env(proyecto.RUTA_CREDENCIALES)
     usuario = datos.get(usuario_clave) or datos.get(usuario_clave.lower())
     contrasena = datos.get(contrasena_clave) or datos.get(contrasena_clave.lower())
@@ -426,6 +427,7 @@ def es_url_publicacion(url, definicion):
 
 
 def url_pertenece_a_perfil(url, perfil_url, definicion):
+    """Evita procesar publicaciones que no pertenecen al perfil oficial revisado."""
     ruta = urlsplit(url).path or ""
     usuario_perfil = usuario_desde_url(perfil_url)
     usuario_url = usuario_desde_url(url)
@@ -2867,6 +2869,7 @@ def bancos_disponibles_para_red(configuracion, definicion):
 
 
 def ejecutar_busquedas_red(page, configuracion, definicion):
+    """Recorre perfiles bancarios de una red y guarda resultados consolidados."""
     publicaciones = []
     descartadas = []
     tiempos = []
@@ -2943,6 +2946,7 @@ def cerrar_contexto_seguro(context):
 
 
 def ejecutar_bot_red(definicion):
+    """Orquesta login, verificacion manual, recoleccion y cierre del navegador."""
     configuracion = proyecto.preparar_rutas_ejecucion(proyecto.cargar_configuracion())
     usuario, contrasena = cargar_credenciales_red(
         definicion["usuario_env"],

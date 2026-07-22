@@ -1804,6 +1804,13 @@ def formatear_fecha_ejecucion(fecha_ejecucion):
     return fecha_ejecucion.strftime("%d-%m-%Y")
 
 
+def slug_plataforma_ejecucion(configuracion):
+    """Devuelve el identificador seguro de red usado en carpetas de resultados."""
+    plataforma = str(configuracion.get("plataforma", "linkedin")).strip().lower()
+    permitidas = {"linkedin", "instagram", "facebook"}
+    return plataforma if plataforma in permitidas else "linkedin"
+
+
 def preparar_rutas_ejecucion(configuracion):
     global RUTA_EJECUCION
     global RUTA_PUBLICACIONES
@@ -1818,13 +1825,15 @@ def preparar_rutas_ejecucion(configuracion):
     fecha_ejecucion = datetime.now()
     fecha_archivo = formatear_fecha_ejecucion(fecha_ejecucion)
     marca_ejecucion = fecha_ejecucion.strftime("%d-%m-%Y_%H-%M-%S")
+    plataforma_slug = slug_plataforma_ejecucion(configuracion)
     RUTA_RESULTADOS.mkdir(exist_ok=True)
 
-    ruta_ejecucion = RUTA_RESULTADOS / f"ejecucion_{marca_ejecucion}"
+    nombre_ejecucion = f"ejecucion_{plataforma_slug}_{marca_ejecucion}"
+    ruta_ejecucion = RUTA_RESULTADOS / nombre_ejecucion
     contador = 2
 
     while ruta_ejecucion.exists():
-        ruta_ejecucion = RUTA_RESULTADOS / f"ejecucion_{marca_ejecucion}_{contador}"
+        ruta_ejecucion = RUTA_RESULTADOS / f"{nombre_ejecucion}_{contador}"
         contador += 1
 
     ruta_ejecucion.mkdir(parents=True, exist_ok=True)

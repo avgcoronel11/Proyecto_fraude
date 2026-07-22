@@ -7,6 +7,8 @@ Archivo/Accesos.xlsx
 # Salidas generadas
 salidas/
 resultados/
+dashboard_exportado/
+exportaciones_dashboard/
 *.csv
 *.log
 *.deb

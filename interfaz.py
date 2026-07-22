@@ -2598,6 +2598,15 @@ def plataforma_label(plataforma):
 
 
 def inferir_plataforma_ejecucion(ejecucion):
+    """Identifica la red de una ejecucion por nombre, metadata o contenido."""
+    nombre = ejecucion.name.lower()
+    if nombre.startswith("ejecucion_facebook_"):
+        return "facebook"
+    if nombre.startswith("ejecucion_instagram_"):
+        return "instagram"
+    if nombre.startswith("ejecucion_linkedin_"):
+        return "linkedin"
+
     archivos = [
         ejecucion / "tiempos_ejecucion.csv",
         ejecucion / "publicaciones_linkedin.csv",
